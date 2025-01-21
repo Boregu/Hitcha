@@ -2,74 +2,109 @@ using UnityEngine;
 
 public class RotateUpperBodyTowardMouse : MonoBehaviour
 {
-    public Transform upperBody; // Reference to the UpperBody GameObject
-    public Camera mainCamera; // Reference to the Main Camera
+    [Header("References")]
+    public Transform upperBody;
+    public Camera mainCamera;
+    public Animator animator;
 
-    public GameObject rightFacingSprite; // Reference to the right-facing sprite
-    public GameObject leftFacingSprite; // Reference to the left-facing sprite
+    [Header("Offsets for Animations (Right)")]
+    public Vector3 idleRightOffset = Vector3.zero;
+    public Vector3 shootRightOffset = Vector3.zero;
+    public Vector3 punchRightOffset = Vector3.zero;
+    public Vector3 uppercutRightOffset = Vector3.zero;
+    public Vector3 heavyPunchRightOffset = Vector3.zero;
 
-    private bora movementScript; // Reference to the movement script on the parent
+    [Header("Offsets for Animations (Left)")]
+    public Vector3 idleLeftOffset = Vector3.zero;
+    public Vector3 shootLeftOffset = Vector3.zero;
+    public Vector3 punchLeftOffset = Vector3.zero;
+    public Vector3 uppercutLeftOffset = Vector3.zero;
+    public Vector3 heavyPunchLeftOffset = Vector3.zero;
+
+    [Header("Aim Settings")]
+    public float aimOffsetAngle = 0f;
+    public Transform targetGameObject;
+    public float aimProjectionDistance = 5f;
+    public Vector3 aimOriginOffset = Vector3.zero;
+
+    private Vector3 defaultLocalPosition;
+
+    [SerializeField] public bool IsFacingRight; // Public-facing bool for external access
 
     void Start()
     {
-        // Find the movement script on the parent GameObject
-        movementScript = GetComponentInParent<bora>();
+        if (mainCamera == null) Debug.LogError("Main Camera not assigned!");
+        if (upperBody == null) Debug.LogError("UpperBody Transform not assigned!");
+        if (targetGameObject == null) Debug.LogError("Target GameObject not assigned!");
+        if (animator == null) Debug.LogError("Animator not assigned!");
 
-        if (movementScript == null)
-        {
-            Debug.LogError("Movement script (bora) not found on the parent GameObject!");
-        }
+        defaultLocalPosition = targetGameObject.localPosition;
     }
 
     void Update()
     {
-        // If the movement script is not assigned, don't proceed
-        if (movementScript == null) return;
+        if (mainCamera == null || upperBody == null || targetGameObject == null || animator == null) return;
 
-        // Check movement states to determine sprite visibility
-        if (movementScript.IsWallSliding || movementScript.IsDashing)
-        {
-            // Hide both sprites when wall sliding or dashing
-            rightFacingSprite.SetActive(false);
-            leftFacingSprite.SetActive(false);
-            return; // Skip rotation logic
-        }
-
-        // Ensure sprites are visible if not wall sliding or dashing
-        rightFacingSprite.SetActive(true);
-        leftFacingSprite.SetActive(true);
-
-        // Step 1: Get the mouse position in world space
+        // Get mouse position in world space
         Vector3 mousePosition = Input.mousePosition;
+        mousePosition.z = 0;
         mousePosition = mainCamera.ScreenToWorldPoint(mousePosition);
 
-        // Step 2: Calculate the direction from the upper body to the mouse position
-        Vector3 direction = mousePosition - upperBody.position;
+        // Calculate direction from the upper body to the mouse
+        Vector3 aimOrigin = upperBody.position + aimOriginOffset;
+        Vector3 direction = (mousePosition - aimOrigin).normalized;
 
-        // Step 3: Calculate the rotation angle in 2D space (Z-axis rotation)
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        // Determine the facing direction
+        bool previousFacingRight = IsFacingRight;
+        IsFacingRight = direction.x > 0;
 
-        // Step 4: Flip only the upper body when moving left or right
-        bool facingRight = direction.x > 0;
-
-        if (facingRight)
+        if (previousFacingRight != IsFacingRight)
         {
-            // Activate the right-facing sprite and set its rotation
-            rightFacingSprite.SetActive(true);
-            leftFacingSprite.SetActive(false);
+            Debug.Log($"Facing direction changed: IsFacingRight is now {IsFacingRight}");
+        }
 
-            // Rotate the right-facing sprite toward the mouse
-            rightFacingSprite.transform.rotation = Quaternion.Euler(0, 0, angle);
+        // Rotate the upper body based on the facing direction
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + aimOffsetAngle;
+
+        if (IsFacingRight)
+        {
+            upperBody.localScale = new Vector3(1, 1, 1); // Face right
+            upperBody.rotation = Quaternion.Euler(0, 0, angle);
+            ApplyAnimationOffset(true);
         }
         else
         {
-            // Activate the left-facing sprite and set its rotation
-            rightFacingSprite.SetActive(false);
-            leftFacingSprite.SetActive(true);
-
-            // Rotate the left-facing sprite toward the mouse
-            // Adjust the angle to account for the flipped orientation
-            leftFacingSprite.transform.rotation = Quaternion.Euler(0, 0, angle - 180f);
+            upperBody.localScale = new Vector3(-1, 1, 1); // Face left
+            upperBody.rotation = Quaternion.Euler(0, 0, angle + 180f);
+            ApplyAnimationOffset(false);
         }
+    }
+
+    void ApplyAnimationOffset(bool facingRight)
+    {
+        Vector3 offset = defaultLocalPosition;
+
+        if (animator.GetBool("IsPunch"))
+        {
+            offset = facingRight ? punchRightOffset : punchLeftOffset;
+        }
+        else if (animator.GetBool("IsUppercut"))
+        {
+            offset = facingRight ? uppercutRightOffset : uppercutLeftOffset;
+        }
+        else if (animator.GetBool("IsHeavyPunch"))
+        {
+            offset = facingRight ? heavyPunchRightOffset : heavyPunchLeftOffset;
+        }
+        else if (animator.GetBool("IsShoot"))
+        {
+            offset = facingRight ? shootRightOffset : shootLeftOffset;
+        }
+        else
+        {
+            offset = facingRight ? idleRightOffset : idleLeftOffset;
+        }
+
+        targetGameObject.localPosition = defaultLocalPosition + offset;
     }
 }

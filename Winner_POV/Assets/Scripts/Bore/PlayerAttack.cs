@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering.Universal; // For Light2D
 
 public class PlayerAttack : MonoBehaviour
 {
@@ -8,58 +9,107 @@ public class PlayerAttack : MonoBehaviour
     public float attackRange = 0.5f;
     public LayerMask enemyLayers;
     public int attackDamage = 40;
-    public float knockbackForce = 5f; // Force applied to enemies on normal hit
+    public float knockbackForce = 5f;
 
     [Header("Uppercut Settings")]
-    public float uppercutForce = 15f; // Upward force applied to the player during an uppercut
-    public float uppercutEnemyMultiplier = 1.2f; // Enemy goes higher than the player
+    public float uppercutForce = 15f;
+    public float uppercutEnemyMultiplier = 1.2f;
 
-    [Header("Dash Settings")]
-    public float dashStunDuration = 0.5f; // How long enemies are stunned when dashed through
-    public float dashKnockUpForce = 8f;   // Upward force applied to enemies when dashed through
-    public float dashAttackRange = 1.0f;  // Dash attack detection range
+    [Header("Heavy Punch Settings")]
+    public float heavyPunchMaxChargeTime = 2f;
+    public float heavyPunchMinXVelocity = 5f;
+    public float heavyPunchMaxXVelocity = 20f;
+    public float heavyPunchYVelocity = 5f;
+    public float heavyPunchKnockbackMultiplier = 1.5f;
+    public float boostDuration = 0.5f;
+
+    [Header("Lights for Heavy Punch")]
+    public Light2D chargeLight;
+    public Light2D flashLight;
+    public float maxChargeLightIntensity = 2f;
+    public float flashLightIntensity = 2f;
+    public float flashBlinkSpeed = 0.1f;
+
+    [Header("Hitbox Settings")]
+    public GameObject hitbox; // Reference to the hitbox GameObject
+    public float hitboxFlipOffset = 1f;
+
+    [SerializeField] private bool playerIsFacingRight;
 
     private Rigidbody2D rb;
+    private RotateUpperBodyTowardMouse upperBodyRotation;
     private float nextAttackTime = 0f;
+
+    private bool isChargingHeavyPunch = false;
+    private bool isHeavyPunchFullyCharged = false;
+    private float chargeTimeElapsed = 0f;
+    private bool isBoosting = false;
 
     void Start()
     {
-        rb = GetComponent<Rigidbody2D>(); // Reference to the Rigidbody2D
+        rb = GetComponent<Rigidbody2D>();
+        upperBodyRotation = GetComponent<RotateUpperBodyTowardMouse>();
+
+        if (upperBodyRotation == null)
+        {
+            Debug.LogError("RotateUpperBodyTowardMouse component not found! Ensure it is attached to the same GameObject as PlayerAttack.");
+        }
+
+        if (chargeLight != null) chargeLight.intensity = 0f;
+        if (flashLight != null) flashLight.intensity = 0f;
+
+        if (hitbox == null)
+        {
+            Debug.LogWarning("Hitbox GameObject is not assigned! Please assign it in the Inspector.");
+        }
     }
 
     void Update()
     {
+        if (upperBodyRotation != null)
+        {
+            playerIsFacingRight = upperBodyRotation.IsFacingRight;
+            Debug.Log($"Player is facing right: {playerIsFacingRight}");
+        }
+
         if (Time.time >= nextAttackTime)
         {
-            if (Input.GetMouseButtonDown(0)) // Left click for a normal attack
+            if (Input.GetMouseButtonDown(0)) // Left-click for normal attack
             {
                 NormalAttack();
                 nextAttackTime = Time.time + attackCooldown;
             }
-            else if (Input.GetMouseButtonDown(1)) // Right click for uppercut attack
+            else if (Input.GetKeyDown(KeyCode.E)) // Uppercut on E
             {
                 UppercutAttack();
                 nextAttackTime = Time.time + attackCooldown;
             }
+            else if (Input.GetMouseButtonDown(1)) // Right-click to charge heavy punch
+            {
+                StartHeavyPunchCharge();
+            }
+            else if (Input.GetMouseButtonUp(1) && isChargingHeavyPunch) // Release heavy punch
+            {
+                PerformHeavyPunch();
+            }
         }
+
+        if (isChargingHeavyPunch)
+        {
+            HandleHeavyPunchCharge();
+        }
+
+        FlipHitbox();
     }
 
     void NormalAttack()
     {
         Debug.Log("Normal Attack!");
-
-        // Detect enemies in range
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayers);
 
-        // Damage and knock back enemies
         foreach (Collider2D enemy in hitEnemies)
         {
             Debug.Log("Hit " + enemy.name);
-
-            // Damage enemy (if applicable)
-            // enemy.GetComponent<Enemy>().TakeDamage(attackDamage);
-
-            // Apply knockback
             Rigidbody2D enemyRb = enemy.GetComponent<Rigidbody2D>();
             if (enemyRb != null)
             {
@@ -72,22 +122,14 @@ public class PlayerAttack : MonoBehaviour
     void UppercutAttack()
     {
         Debug.Log("Uppercut Attack!");
-
-        // Apply upward force to the player
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, uppercutForce);
 
-        // Detect enemies in range
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayers);
 
-        // Damage and knock up enemies
         foreach (Collider2D enemy in hitEnemies)
         {
             Debug.Log("Uppercut Hit " + enemy.name);
 
-            // Damage enemy
-            // enemy.GetComponent<Enemy>().TakeDamage(attackDamage);
-
-            // Apply upward force to the enemy
             Rigidbody2D enemyRb = enemy.GetComponent<Rigidbody2D>();
             if (enemyRb != null)
             {
@@ -96,44 +138,73 @@ public class PlayerAttack : MonoBehaviour
         }
     }
 
-    public void DashAttack()
+    void StartHeavyPunchCharge()
     {
-        Debug.Log("Dash Attack!");
+        Debug.Log("Charging Heavy Punch...");
+        isChargingHeavyPunch = true;
+        chargeTimeElapsed = 0f;
+        isHeavyPunchFullyCharged = false;
 
-        // Detect enemies in range of the dash
-        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(transform.position, dashAttackRange, enemyLayers);
+        if (chargeLight != null) chargeLight.intensity = 0f;
+    }
 
-        // Stun and knock up enemies
-        foreach (Collider2D enemy in hitEnemies)
+    void HandleHeavyPunchCharge()
+    {
+        chargeTimeElapsed += Time.deltaTime;
+
+        if (chargeLight != null)
+            chargeLight.intensity = Mathf.Clamp01(chargeTimeElapsed / heavyPunchMaxChargeTime) * maxChargeLightIntensity;
+
+        if (chargeTimeElapsed >= heavyPunchMaxChargeTime && !isHeavyPunchFullyCharged)
         {
-            Debug.Log("Dashed Through " + enemy.name);
+            Debug.Log("Heavy Punch Fully Charged!");
+            isHeavyPunchFullyCharged = true;
 
-            // Stun the enemy (if applicable)
-            EnemyStun enemyStun = enemy.GetComponent<EnemyStun>();
-            if (enemyStun != null)
-            {
-                enemyStun.Stun(dashStunDuration);
-            }
-
-            // Apply upward knock-up force
-            Rigidbody2D enemyRb = enemy.GetComponent<Rigidbody2D>();
-            if (enemyRb != null)
-            {
-                enemyRb.linearVelocity = new Vector2(enemyRb.linearVelocity.x, dashKnockUpForce);
-            }
+            if (flashLight != null)
+                StartCoroutine(FlashLightCoroutine());
         }
     }
 
-    // To visualize the attack range in the editor
-    void OnDrawGizmosSelected()
+    void PerformHeavyPunch()
     {
-        if (attackPoint == null)
-            return;
+        Debug.Log("Heavy Punch Released!");
+        isChargingHeavyPunch = false;
 
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(attackPoint.position, attackRange);
+        if (chargeLight != null) chargeLight.intensity = 0f;
+        if (flashLight != null) flashLight.intensity = 0f;
 
-        Gizmos.color = Color.blue;
-        Gizmos.DrawWireSphere(transform.position, dashAttackRange);
+        float chargePercentage = Mathf.Clamp01(chargeTimeElapsed / heavyPunchMaxChargeTime);
+        float xVelocity = Mathf.Lerp(heavyPunchMinXVelocity, heavyPunchMaxXVelocity, chargePercentage);
+        float yVelocity = heavyPunchYVelocity;
+
+        xVelocity = playerIsFacingRight ? xVelocity : -xVelocity;
+
+        rb.linearVelocity = new Vector2(xVelocity, yVelocity);
+        isBoosting = true;
+
+        Invoke("EndBoost", boostDuration);
+    }
+
+    void FlipHitbox()
+    {
+        if (hitbox == null) return;
+
+        Vector3 hitboxPosition = hitbox.transform.localPosition;
+        hitboxPosition.x = playerIsFacingRight ? Mathf.Abs(hitboxFlipOffset) : -Mathf.Abs(hitboxFlipOffset);
+        hitbox.transform.localPosition = hitboxPosition;
+    }
+
+    System.Collections.IEnumerator FlashLightCoroutine()
+    {
+        while (isHeavyPunchFullyCharged && isChargingHeavyPunch)
+        {
+            if (flashLight != null)
+            {
+                flashLight.intensity = flashLightIntensity;
+                yield return new WaitForSeconds(flashBlinkSpeed);
+                flashLight.intensity = 0f;
+                yield return new WaitForSeconds(flashBlinkSpeed);
+            }
+        }
     }
 }

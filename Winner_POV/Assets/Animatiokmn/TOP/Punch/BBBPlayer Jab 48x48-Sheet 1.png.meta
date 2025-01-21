@@ -1,37 +1,52 @@
 fileFormatVersion: 2
-guid: 1012decb94beb1245aa4e0498b028565
+guid: 52bbc282412192744ba398884a9e282f
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 6186064168184257423
-    second: BBBBBBBBBBPlayer Idle 48x48-Sheet_0
+      213: 487158779032228880
+    second: BBBPlayer Jab 48x48-Sheet 1_0
   - first:
-      213: -8859241761978116197
-    second: BBBBBBBBBBPlayer Idle 48x48-Sheet_1
+      213: -6175863195792371744
+    second: BBBPlayer Jab 48x48-Sheet 1_1
   - first:
-      213: 7431059019412830803
-    second: BBBBBBBBBBPlayer Idle 48x48-Sheet_2
+      213: 1270824525964399067
+    second: BBBPlayer Jab 48x48-Sheet 1_2
   - first:
-      213: -5549043446212521131
-    second: BBBBBBBBBBPlayer Idle 48x48-Sheet_3
+      213: -7839496331299683060
+    second: BBBPlayer Jab 48x48-Sheet 1_3
   - first:
-      213: 2792626194952671536
-    second: BBBBBBBBBBPlayer Idle 48x48-Sheet_4
+      213: -319325258277790230
+    second: BBBPlayer Jab 48x48-Sheet 1_4
   - first:
-      213: 1089105277622555899
-    second: BBBBBBBBBBPlayer Idle 48x48-Sheet_5
+      213: 3026285529164439800
+    second: BBBPlayer Jab 48x48-Sheet 1_5
   - first:
-      213: 8130533603894754837
-    second: BBBBBBBBBBPlayer Idle 48x48-Sheet_6
+      213: 5116883435206529852
+    second: BBBPlayer Jab 48x48-Sheet 1_6
   - first:
-      213: -5880540505480477674
-    second: BBBBBBBBBBPlayer Idle 48x48-Sheet_7
+      213: -7137414461479923861
+    second: BBBPlayer Jab 48x48-Sheet 1_7
   - first:
-      213: -570205766098230196
-    second: BBBBBBBBBBPlayer Idle 48x48-Sheet_8
+      213: -8559924049045791961
+    second: BBBPlayer Jab 48x48-Sheet 1_8
   - first:
-      213: 7243500856997761517
-    second: BBBBBBBBBBPlayer Idle 48x48-Sheet_9
+      213: 2009813543289406395
+    second: BBBPlayer Jab 48x48-Sheet 1_9
+  - first:
+      213: -5625646217586250648
+    second: BBBPlayer Jab 48x48-Sheet 1_10
+  - first:
+      213: -9097979181767068499
+    second: BBBPlayer Jab 48x48-Sheet 1_11
+  - first:
+      213: 4333232716019333849
+    second: BBBPlayer Jab 48x48-Sheet 1_12
+  - first:
+      213: -3189623739277282644
+    second: BBBPlayer Jab 48x48-Sheet 1_13
+  - first:
+      213: 7751873065389208942
+    second: BBBPlayer Jab 48x48-Sheet 1_14
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -127,7 +142,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: BBBBBBBBBBPlayer Idle 48x48-Sheet_0
+      name: BBBPlayer Jab 48x48-Sheet 1_0
       rect:
         serializedVersion: 2
         x: 0
@@ -135,21 +150,21 @@ TextureImporter:
         width: 48
         height: 48
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f8b1566f59059d550800000000000000
-      internalID: 6186064168184257423
+      spriteID: 014dd65145cb2c600800000000000000
+      internalID: 487158779032228880
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: BBBBBBBBBBPlayer Idle 48x48-Sheet_1
+      name: BBBPlayer Jab 48x48-Sheet 1_1
       rect:
         serializedVersion: 2
         x: 48
@@ -157,21 +172,21 @@ TextureImporter:
         width: 48
         height: 48
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: b971df54e86ad0580800000000000000
-      internalID: -8859241761978116197
+      spriteID: 0ef0361052dea4aa0800000000000000
+      internalID: -6175863195792371744
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: BBBBBBBBBBPlayer Idle 48x48-Sheet_2
+      name: BBBPlayer Jab 48x48-Sheet 1_2
       rect:
         serializedVersion: 2
         x: 96
@@ -179,21 +194,21 @@ TextureImporter:
         width: 48
         height: 48
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 35a70158ecc602760800000000000000
-      internalID: 7431059019412830803
+      spriteID: bd156f95c20e2a110800000000000000
+      internalID: 1270824525964399067
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: BBBBBBBBBBPlayer Idle 48x48-Sheet_3
+      name: BBBPlayer Jab 48x48-Sheet 1_3
       rect:
         serializedVersion: 2
         x: 144
@@ -201,21 +216,21 @@ TextureImporter:
         width: 48
         height: 48
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 5531b41c266ddf2b0800000000000000
-      internalID: -5549043446212521131
+      spriteID: c0587e24f93843390800000000000000
+      internalID: -7839496331299683060
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: BBBBBBBBBBPlayer Idle 48x48-Sheet_4
+      name: BBBPlayer Jab 48x48-Sheet 1_4
       rect:
         serializedVersion: 2
         x: 192
@@ -223,21 +238,21 @@ TextureImporter:
         width: 48
         height: 48
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 031da947ab661c620800000000000000
-      internalID: 2792626194952671536
+      spriteID: aedda849e57819bf0800000000000000
+      internalID: -319325258277790230
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: BBBBBBBBBBPlayer Idle 48x48-Sheet_5
+      name: BBBPlayer Jab 48x48-Sheet 1_5
       rect:
         serializedVersion: 2
         x: 240
@@ -245,21 +260,21 @@ TextureImporter:
         width: 48
         height: 48
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: bf412bbca774d1f00800000000000000
-      internalID: 1089105277622555899
+      spriteID: 8f060c2a7a68ff920800000000000000
+      internalID: 3026285529164439800
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: BBBBBBBBBBPlayer Idle 48x48-Sheet_6
+      name: BBBPlayer Jab 48x48-Sheet 1_6
       rect:
         serializedVersion: 2
         x: 288
@@ -267,21 +282,21 @@ TextureImporter:
         width: 48
         height: 48
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 51ef58e3c3575d070800000000000000
-      internalID: 8130533603894754837
+      spriteID: c33d098bf52d20740800000000000000
+      internalID: 5116883435206529852
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: BBBBBBBBBBPlayer Idle 48x48-Sheet_7
+      name: BBBPlayer Jab 48x48-Sheet 1_7
       rect:
         serializedVersion: 2
         x: 336
@@ -289,21 +304,21 @@ TextureImporter:
         width: 48
         height: 48
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 6144a83119f146ea0800000000000000
-      internalID: -5880540505480477674
+      spriteID: b6fc0c8ec5fc2fc90800000000000000
+      internalID: -7137414461479923861
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: BBBBBBBBBBPlayer Idle 48x48-Sheet_8
+      name: BBBPlayer Jab 48x48-Sheet 1_8
       rect:
         serializedVersion: 2
         x: 384
@@ -311,21 +326,21 @@ TextureImporter:
         width: 48
         height: 48
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: c44e5d670e83618f0800000000000000
-      internalID: -570205766098230196
+      spriteID: 72b5d480e6a053980800000000000000
+      internalID: -8559924049045791961
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: BBBBBBBBBBPlayer Idle 48x48-Sheet_9
+      name: BBBPlayer Jab 48x48-Sheet 1_9
       rect:
         serializedVersion: 2
         x: 432
@@ -333,15 +348,15 @@ TextureImporter:
         width: 48
         height: 48
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: de1d697d6a5168460800000000000000
-      internalID: 7243500856997761517
+      spriteID: bb3c888e4ca44eb10800000000000000
+      internalID: 2009813543289406395
       vertices: []
       indices: 
       edges: []
@@ -350,7 +365,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: c782a3911b0ce404ab42785529a90044
+    spriteID: 7c362520bf7d2d14aaa1076f306b7ff3
     internalID: 0
     vertices: []
     indices: 
@@ -360,16 +375,16 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      BBBBBBBBBBPlayer Idle 48x48-Sheet_0: 6186064168184257423
-      BBBBBBBBBBPlayer Idle 48x48-Sheet_1: -8859241761978116197
-      BBBBBBBBBBPlayer Idle 48x48-Sheet_2: 7431059019412830803
-      BBBBBBBBBBPlayer Idle 48x48-Sheet_3: -5549043446212521131
-      BBBBBBBBBBPlayer Idle 48x48-Sheet_4: 2792626194952671536
-      BBBBBBBBBBPlayer Idle 48x48-Sheet_5: 1089105277622555899
-      BBBBBBBBBBPlayer Idle 48x48-Sheet_6: 8130533603894754837
-      BBBBBBBBBBPlayer Idle 48x48-Sheet_7: -5880540505480477674
-      BBBBBBBBBBPlayer Idle 48x48-Sheet_8: -570205766098230196
-      BBBBBBBBBBPlayer Idle 48x48-Sheet_9: 7243500856997761517
+      BBBPlayer Jab 48x48-Sheet 1_0: 487158779032228880
+      BBBPlayer Jab 48x48-Sheet 1_1: -6175863195792371744
+      BBBPlayer Jab 48x48-Sheet 1_2: 1270824525964399067
+      BBBPlayer Jab 48x48-Sheet 1_3: -7839496331299683060
+      BBBPlayer Jab 48x48-Sheet 1_4: -319325258277790230
+      BBBPlayer Jab 48x48-Sheet 1_5: 3026285529164439800
+      BBBPlayer Jab 48x48-Sheet 1_6: 5116883435206529852
+      BBBPlayer Jab 48x48-Sheet 1_7: -7137414461479923861
+      BBBPlayer Jab 48x48-Sheet 1_8: -8559924049045791961
+      BBBPlayer Jab 48x48-Sheet 1_9: 2009813543289406395
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
