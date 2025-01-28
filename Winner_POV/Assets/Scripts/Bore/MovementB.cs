@@ -17,11 +17,13 @@ public class bora : MonoBehaviour
     public float wallJumpBoostSpeed = 10f;
     public float wallKeyDisableTime = 0.5f;
     public LayerMask wallLayer;
-    public bool enableUpwardWallJumpBug = false;  // Toggle for the "feature"
+    public bool enableUpwardWallJumpBug = false;
 
     [Header("Air Control")]
     public float airControlForce = 40f;
     public float airMaxSpeed = 8f;
+    private bool bypassSpeedLimit = false;
+    private float temporarySpeedCap = 8f;
 
     [Header("Fast Fall")]
     public float fastFallMultiplier = 2f;
@@ -31,6 +33,7 @@ public class bora : MonoBehaviour
     public float dashDuration = 0.2f;
     public float dashCooldown = 1f;
     public LayerMask enemyLayer;
+    private Vector2 velocityBeforeDash;
 
     [Header("UI")]
     public TextMeshProUGUI velocityDisplay;
@@ -42,12 +45,12 @@ public class bora : MonoBehaviour
     public UnityEvent OnWallJump;
 
     [Header("Momentum Settings")]
-    public float momentumPreserveMultiplier = 1f; // 1 = full momentum, 0.5 = half momentum, etc.
+    public float momentumPreserveMultiplier = 1f;
 
     [Header("Bunny Hop")]
-    public float bhopMultiplier = 1f;  // Control momentum preservation
-    private float lastVelocityBeforeLanding;  // Store the velocity
-    private float preservedSpeed;  // New variable to store the speed we want to preserve
+    public float bhopMultiplier = 1f;
+    private float lastVelocityBeforeLanding;
+    private float preservedSpeed;
 
     private Rigidbody2D rb;
     private bool canJump = true;
@@ -78,6 +81,12 @@ public class bora : MonoBehaviour
     public bool IsWallRight => isWallRight;
     public bool IsDashing => isDashing;
 
+    public void SetSpeedLimitBypass(bool bypass, float speedCap)
+    {
+        bypassSpeedLimit = bypass;
+        temporarySpeedCap = speedCap;
+    }
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -96,18 +105,11 @@ public class bora : MonoBehaviour
 
         if (Input.GetKey(KeyCode.LeftControl) && dashCooldownTimer <= 0)
         {
-            float horizontal = Input.GetAxisRaw("Horizontal");
-            float vertical = Input.GetAxisRaw("Vertical");
+            Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            Vector2 direction = ((Vector2)(mousePos - transform.position)).normalized;
             
-            if (horizontal != 0 || vertical != 0)
-            {
-                dashDirection = new Vector2(horizontal, vertical).normalized;
-            }
-            else
-            {
-                dashDirection = new Vector2(facingDirection, 0);
-            }
-            
+            dashDirection = direction;
+            velocityBeforeDash = rb.linearVelocity;
             StartDash();
             return;
         }
@@ -122,7 +124,6 @@ public class bora : MonoBehaviour
         if (dashCooldownTimer > 0)
             dashCooldownTimer -= Time.deltaTime;
 
-        // Store velocity when in air
         if (!canJump)
         {
             lastVelocityBeforeLanding = rb.linearVelocity.x;
@@ -185,18 +186,38 @@ public class bora : MonoBehaviour
         }
         else
         {
-            float airForce = moveX * airControlForce;
-            rb.AddForce(new Vector2(airForce, 0) * Time.deltaTime, ForceMode2D.Impulse);
-            rb.linearVelocity = new Vector2(
-                Mathf.Clamp(rb.linearVelocity.x, -airMaxSpeed, airMaxSpeed),
-                rb.linearVelocity.y);
+            float airForce = moveX * airControlForce * Time.deltaTime;
+            float currentXVel = rb.linearVelocity.x;
+
+            if ((moveX > 0 && currentXVel < airMaxSpeed) || 
+                (moveX < 0 && currentXVel > -airMaxSpeed))
+            {
+                float projectedVelocity = currentXVel + airForce;
+                
+                if (Mathf.Abs(projectedVelocity) > airMaxSpeed)
+                {
+                    float clampedForce = (airMaxSpeed * Mathf.Sign(moveX)) - currentXVel;
+                    rb.AddForce(new Vector2(clampedForce, 0), ForceMode2D.Impulse);
+                }
+                else
+                {
+                    rb.AddForce(new Vector2(airForce, 0), ForceMode2D.Impulse);
+                }
+            }
+
+            if (bypassSpeedLimit)
+            {
+                rb.linearVelocity = new Vector2(
+                    Mathf.Clamp(rb.linearVelocity.x, -temporarySpeedCap, temporarySpeedCap),
+                    rb.linearVelocity.y
+                );
+            }
         }
 
         HandleWallJump(moveX);
 
         if (Input.GetKey(KeyCode.Space) && canJump)
         {
-            // For the first jump, maintain horizontal velocity
             if (preservedSpeed == 0)
             {
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
@@ -224,17 +245,14 @@ public class bora : MonoBehaviour
 
             if (Input.GetKey(KeyCode.Space) && canWallJump)
             {
-                // Check if we should use the "bug" behavior
                 bool facingAwayFromWall = (isWallRight && facingDirection < 0) || (isWallLeft && facingDirection > 0);
                 
                 if (enableUpwardWallJumpBug && facingAwayFromWall)
                 {
-                    // Jump straight up instead of away from wall
-                    rb.linearVelocity = new Vector2(0, wallJumpForce * 1.2f);  // Slightly higher jump for fun
+                    rb.linearVelocity = new Vector2(0, wallJumpForce * 1.2f);
                 }
                 else
                 {
-                    // Normal wall jump away from wall
                     float jumpDirectionX = isWallRight ? -1 : 1;
                     rb.linearVelocity = new Vector2(jumpDirectionX * wallJumpDirectionForce, wallJumpForce);
                 }
@@ -293,7 +311,21 @@ public class bora : MonoBehaviour
     {
         isDashing = false;
         rb.gravityScale = 1;
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0);
+
+        if (!canJump)
+        {
+            float blendFactor = 0.3f;
+            Vector2 dashVelocity = dashDirection * dashSpeed;
+            Vector2 blendedVelocity = Vector2.Lerp(velocityBeforeDash, dashVelocity, blendFactor);
+            
+            blendedVelocity.x = Mathf.Clamp(blendedVelocity.x, -airMaxSpeed, airMaxSpeed);
+            
+            rb.linearVelocity = new Vector2(blendedVelocity.x, velocityBeforeDash.y);
+        }
+        else
+        {
+            rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+        }
         
         Physics2D.IgnoreLayerCollision(gameObject.layer, LayerMask.NameToLayer("Enemy"), false);
     }
@@ -318,16 +350,14 @@ public class bora : MonoBehaviour
             isWallLeft = false;
             isWallRight = false;
 
-            // Reset velocity if not holding jump
             if (!Input.GetKey(KeyCode.Space))
             {
                 rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
-                preservedSpeed = 0;  // Make sure preserved speed is reset
+                preservedSpeed = 0;
             }
             else
             {
                 preservedSpeed = lastVelocityBeforeLanding * bhopMultiplier;
-                Debug.Log($"Bhop Speed Stored: {preservedSpeed}");
             }
 
             if (!wasGrounded)
@@ -359,7 +389,6 @@ public class bora : MonoBehaviour
             return;
         }
 
-        // Only check wall collision if we're in the air and it's a wall
         if (!canJump && ((1 << collision.gameObject.layer) & wallLayer) != 0)
         {
             Vector2 normal = collision.GetContact(0).normal;
