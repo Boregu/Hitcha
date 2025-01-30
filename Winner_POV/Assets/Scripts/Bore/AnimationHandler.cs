@@ -120,7 +120,7 @@ public class AnimationHandler : MonoBehaviour
         }
 
         // Normal Attack Animation
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(1))
         {
             upperBodyAnimator.SetBool("IsPunch", true);
             upperBodyAnimator.SetBool("IsIdle", false);

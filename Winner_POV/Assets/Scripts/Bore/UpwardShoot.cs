@@ -32,6 +32,8 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
     private Vector3 defaultLocalPosition;
     [SerializeField] public bool IsFacingRight;
     private PlayerAttack playerAttack;
+    private Vector3 currentOffset;
+    private Vector3 targetOffset;
 
     void Start()
     {
@@ -42,9 +44,11 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
 
         defaultLocalPosition = targetGameObject.localPosition;
         playerAttack = GetComponent<PlayerAttack>();
+        currentOffset = Vector3.zero;
+        targetOffset = Vector3.zero;
     }
 
-    void Update()
+    void LateUpdate()
     {
         if (mainCamera == null || upperBody == null || targetGameObject == null || animationHandler == null) return;
 
@@ -55,13 +59,20 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
         Vector3 aimOrigin = upperBody.position + aimOriginOffset;
         Vector3 direction = (mousePosition - aimOrigin).normalized;
 
-        // Determine facing direction based on mouse position
-        IsFacingRight = direction.x > 0;
+        // For non-uppercut states, determine facing direction based on mouse position
+        if (!animationHandler.IsUppercutting)
+        {
+            IsFacingRight = direction.x > 0;
+        }
+        else
+        {
+            // For uppercut, use the last pressed A/D key
+            IsFacingRight = animationHandler.LastNonZeroInput >= 0;
+        }
 
         // Calculate angle for rotation
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + aimOffsetAngle;
 
-        // Only follow cursor during idle and shooting
         if (animationHandler.IsIdle || animationHandler.IsShooting)
         {
             // Full rotation following cursor
@@ -74,69 +85,50 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
                 upperBody.rotation = Quaternion.Euler(0, 0, angle + 180f);
             }
         }
-        else if (animationHandler.IsUppercutting)
-        {
-            // Use A/D input direction for uppercut, but maintain upright orientation
-            bool facingRight = animationHandler.LastNonZeroInput >= 0;
-            float straightAngle = facingRight ? 0 : 180;
-            upperBody.rotation = Quaternion.Euler(0, 0, straightAngle);
-            
-            // Only flip the scale, don't rotate upside down
-            upperBody.localScale = new Vector3(facingRight ? 1 : -1, 1, 1);
-            IsFacingRight = facingRight;
-        }
         else
         {
-            // Face straight left or right based on cursor for other attacks
+            // Face straight left or right
             float straightAngle = IsFacingRight ? 0 : 180;
             upperBody.rotation = Quaternion.Euler(0, 0, straightAngle);
         }
 
-        // Handle scaling for non-uppercut states
-        if (!animationHandler.IsUppercutting)
-        {
-            upperBody.localScale = new Vector3(IsFacingRight ? 1 : -1, 1, 1);
-        }
+        // Handle scaling
+        upperBody.localScale = new Vector3(IsFacingRight ? 1 : -1, 1, 1);
 
+        // Apply offset immediately after determining the state
         ApplyAnimationOffset();
     }
 
     void ApplyAnimationOffset()
     {
-        Vector3 offset = defaultLocalPosition;
-
-        // Check states in priority order
+        // Check states in priority order and directly set the offset
         if (playerAttack != null && playerAttack.IsChargingHeavyPunch)
         {
-            offset = IsFacingRight ? chargingHeavyPunchRightOffset : chargingHeavyPunchLeftOffset;
+            targetOffset = IsFacingRight ? chargingHeavyPunchRightOffset : chargingHeavyPunchLeftOffset;
         }
         else if (animationHandler.IsHeavyPunching)
         {
-            offset = IsFacingRight ? heavyPunchRightOffset : heavyPunchLeftOffset;
+            targetOffset = IsFacingRight ? heavyPunchRightOffset : heavyPunchLeftOffset;
         }
         else if (animationHandler.IsUppercutting)
         {
-            bool facingRight = animationHandler.LastNonZeroInput >= 0;
-            offset = facingRight ? uppercutRightOffset : uppercutLeftOffset;
+            targetOffset = IsFacingRight ? uppercutRightOffset : uppercutLeftOffset;
         }
         else if (animationHandler.IsPunching)
         {
-            offset = IsFacingRight ? punchRightOffset : punchLeftOffset;
+            targetOffset = IsFacingRight ? punchRightOffset : punchLeftOffset;
         }
         else if (animationHandler.IsShooting)
         {
-            offset = IsFacingRight ? shootRightOffset : shootLeftOffset;
+            targetOffset = IsFacingRight ? shootRightOffset : shootLeftOffset;
         }
         else // Idle state
         {
-            offset = IsFacingRight ? idleRightOffset : idleLeftOffset;
+            targetOffset = IsFacingRight ? idleRightOffset : idleLeftOffset;
         }
 
-        targetGameObject.localPosition = Vector3.Lerp(
-            targetGameObject.localPosition, 
-            defaultLocalPosition + offset, 
-            Time.deltaTime * 10f
-        );
+        // Directly set the position
+        targetGameObject.localPosition = defaultLocalPosition + targetOffset;
     }
 
     public void ResetToDefaultPosition()
