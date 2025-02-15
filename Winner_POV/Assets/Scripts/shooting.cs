@@ -14,12 +14,22 @@ public class PlayerShoot : MonoBehaviour
     public float flashLightDuration = 0.05f; // How long the flash light stays on
     public GameObject muzzleFlashParticlePrefab; // Particle effect prefab for shooting
     public GameObject hitEffectPrefab; // Particle effect for when projectile hits something
+
+    [Header("Aiming")]
+    public Camera mainCamera; // Reference to the main camera
+    public float aimOffsetAngle = 0f;
+    public Vector3 aimOriginOffset = Vector3.zero;
     
     private float lastShotTime; // Time of the last shot
     private float flashLightEndTime; // When to turn off the flash light
+    private Vector2 aimDirection; // Store the current aim direction
+    [SerializeField] public bool IsFacingRight = true;
 
     void Start()
     {
+        if (mainCamera == null)
+            mainCamera = Camera.main;
+
         // Ensure flash light starts off
         if (muzzleFlashLight != null)
         {
@@ -27,10 +37,13 @@ public class PlayerShoot : MonoBehaviour
         }
     }
 
-    void Update()
+    void LateUpdate()
     {
-        if (firePoint == null)
+        if (firePoint == null || mainCamera == null)
             return;
+
+        // Update aim direction
+        UpdateAimDirection();
 
         // Handle flash light timing
         if (muzzleFlashLight != null && muzzleFlashLight.activeSelf && Time.time >= flashLightEndTime)
@@ -39,10 +52,43 @@ public class PlayerShoot : MonoBehaviour
         }
 
         // Check for input and shoot
-        if (Input.GetButtonDown("Fire1")) // Changed from GetButton to GetButtonDown for single shots
+        if (Input.GetButtonDown("Fire1"))
         {
             Shoot();
         }
+    }
+
+    private void UpdateAimDirection()
+    {
+        Vector3 mousePosition = Input.mousePosition;
+        mousePosition.z = 0;
+        mousePosition = mainCamera.ScreenToWorldPoint(mousePosition);
+
+        // Calculate aim from the base position (y=0)
+        Vector3 basePosition = transform.position;
+        basePosition.y = transform.position.y - aimOriginOffset.y; // Subtract the visual offset for aiming calculation
+        Vector3 direction = (mousePosition - basePosition).normalized;
+        aimDirection = direction;
+
+        // Calculate angle for rotation
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + aimOffsetAngle;
+
+        // Determine facing direction based on mouse position
+        IsFacingRight = direction.x > 0;
+
+        // Full rotation following cursor
+        if (IsFacingRight)
+        {
+            firePoint.transform.rotation = Quaternion.Euler(0, 0, angle);
+        }
+        else
+        {
+            // When facing left, we don't add 180 to the angle, just flip the scale
+            firePoint.transform.rotation = Quaternion.Euler(0, 0, angle);
+        }
+
+        // Handle scaling - this will handle the flipping
+        firePoint.transform.localScale = new Vector3(IsFacingRight ? 1 : -1, 1, 1);
     }
 
     private void Shoot()
@@ -51,9 +97,9 @@ public class PlayerShoot : MonoBehaviour
         if (Time.time - lastShotTime >= shootInterval)
         {
             lastShotTime = Time.time;
-
-            // Instantiate the projectile
-            GameObject projectile = Instantiate(projectilePrefab, firePoint.transform.position, Quaternion.identity);
+            
+            // Instantiate the projectile with the correct rotation
+            GameObject projectile = Instantiate(projectilePrefab, firePoint.transform.position, firePoint.transform.rotation);
 
             // Handle muzzle flash light
             if (muzzleFlashLight != null)
@@ -65,34 +111,22 @@ public class PlayerShoot : MonoBehaviour
             // Handle muzzle flash particle effect
             if (muzzleFlashParticlePrefab != null)
             {
-                // Instantiate the particle system as a child of firePoint
-                GameObject muzzleFlash = Instantiate(muzzleFlashParticlePrefab, firePoint.transform.position, firePoint.transform.rotation, firePoint.transform);
-                
-                // Get the particle system component
-                ParticleSystem particleSystem = muzzleFlash.GetComponent<ParticleSystem>();
-                if (particleSystem != null)
+                float particleRotation = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
+                if (!IsFacingRight)
                 {
-                    // Make sure the particle system is using local space for proper positioning
-                    var mainModule = particleSystem.main;
-                    mainModule.simulationSpace = ParticleSystemSimulationSpace.Local;
-                    
-                    float particleDuration = mainModule.duration;
-                    // Detach from parent before destroying to prevent visual glitches
-                    muzzleFlash.transform.SetParent(null, true);
-                    Destroy(muzzleFlash, particleDuration);
+                    particleRotation += 180f;
                 }
+                GameObject muzzleFlash = Instantiate(muzzleFlashParticlePrefab, firePoint.transform.position, 
+                    Quaternion.Euler(0, 0, particleRotation));
+                
+                Destroy(muzzleFlash, 2f);
             }
-
-            // Calculate the direction based on mouse position
-            Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            mousePosition.z = 0;
-            Vector2 direction = ((Vector2)(mousePosition - firePoint.transform.position)).normalized;
 
             // Set up the projectile
             Rigidbody2D rb = projectile.GetComponent<Rigidbody2D>();
             if (rb != null)
             {
-                rb.linearVelocity = direction * projectileSpeed;
+                rb.linearVelocity = aimDirection * projectileSpeed;
             }
 
             // Add a ProjectileCollision component to handle hit effects
@@ -105,22 +139,20 @@ public class PlayerShoot : MonoBehaviour
     }
 }
 
-// New class to handle projectile collisions
+// ProjectileCollision class remains unchanged
 public class ProjectileCollision : MonoBehaviour
 {
     public GameObject hitEffectPrefab;
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        // Create hit effect at the point of collision
         if (hitEffectPrefab != null)
         {
             Vector3 hitPoint = collision.contacts[0].point;
             GameObject hitEffect = Instantiate(hitEffectPrefab, hitPoint, Quaternion.identity);
-            Destroy(hitEffect, 1f); // Destroy the hit effect after 1 second
+            Destroy(hitEffect, 1f);
         }
 
-        // Destroy the projectile
         Destroy(gameObject);
     }
 }
