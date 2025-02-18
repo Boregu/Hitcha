@@ -52,6 +52,9 @@ public class bora : MonoBehaviour
     private float lastVelocityBeforeLanding;
     private float preservedSpeed;
 
+    [Header("Wall Slide Settings")]
+    public GameObject objectToDisable; // Reference to the GameObject to disable
+
     private Rigidbody2D rb;
     private bool canJump = true;
     private bool isWallSliding = false;
@@ -236,6 +239,12 @@ public class bora : MonoBehaviour
     {
         if (isWallSliding)
         {
+            // Disable the GameObject when wall sliding
+            if (objectToDisable != null)
+            {
+                objectToDisable.SetActive(false);
+            }
+
             bool holdingTowardsWall = (isWallRight && moveX > 0) || (isWallLeft && moveX < 0);
 
             if (holdingTowardsWall)
@@ -266,6 +275,14 @@ public class bora : MonoBehaviour
                 isWallSliding = false;
                 canWallJump = false;
                 OnWallJump?.Invoke();
+            }
+        }
+        else
+        {
+            // Enable the GameObject when not wall sliding
+            if (objectToDisable != null)
+            {
+                objectToDisable.SetActive(true);
             }
         }
     }

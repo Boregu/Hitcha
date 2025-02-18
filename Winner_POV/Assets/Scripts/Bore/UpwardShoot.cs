@@ -1,4 +1,5 @@
 using UnityEngine;
+using Cinemachine; // Add Cinemachine namespace
 
 public class RotateUpperBodyTowardMouse : MonoBehaviour
 {
@@ -7,27 +8,94 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
     public Camera mainCamera;
     public AnimationHandler animationHandler;
     public Transform targetGameObject;
+    public Transform aimReferencePoint;
+    public CircleCollider2D aimConstraintCollider;
+    public CinemachineVirtualCamera virtualCamera; // Reference to virtual camera
+    public Collider2D leftSideCollider;  // Add reference to left side trigger
+    public Collider2D rightSideCollider; // Add reference to right side trigger
 
     [Header("Offsets for Animations (Right)")]
-    public Vector3 idleRightOffset = Vector3.zero;
+     public Vector3 idleRightOffset = Vector3.zero;
+    public float idleRightRotationZ = 0f;
+    public float idleRightScaleX = 1f;
+
     public Vector3 shootRightOffset = Vector3.zero;
+    public float shootRightRotationZ = 0f;
+    public float shootRightScaleX = 1f;
+
     public Vector3 punchRightOffset = Vector3.zero;
+    public float punchRightRotationZ = 0f;
+    public float punchRightScaleX = 1f;
+
     public Vector3 uppercutRightOffset = Vector3.zero;
+    public float uppercutRightRotationZ = 0f;
+    public float uppercutRightScaleX = 1f;
+
     public Vector3 heavyPunchRightOffset = Vector3.zero;
+    public float heavyPunchRightRotationZ = 0f;
+    public float heavyPunchRightScaleX = 1f;
+
     public Vector3 chargingHeavyPunchRightOffset = Vector3.zero;
+    public float chargingHeavyPunchRightRotationZ = 0f;
+    public float chargingHeavyPunchRightScaleX = 1f;
 
     [Header("Offsets for Animations (Left)")]
     public Vector3 idleLeftOffset = Vector3.zero;
+    public float idleLeftRotationZ = 0f;
+    public float idleLeftScaleX = 1f;
+
     public Vector3 shootLeftOffset = Vector3.zero;
+    public float shootLeftRotationZ = 0f;
+    public float shootLeftScaleX = 1f;
+
     public Vector3 punchLeftOffset = Vector3.zero;
+    public float punchLeftRotationZ = 0f;
+    public float punchLeftScaleX = 1f;
+
     public Vector3 uppercutLeftOffset = Vector3.zero;
+    public float uppercutLeftRotationZ = 0f;
+    public float uppercutLeftScaleX = 1f;
+
     public Vector3 heavyPunchLeftOffset = Vector3.zero;
+    public float heavyPunchLeftRotationZ = 0f;
+    public float heavyPunchLeftScaleX = 1f;
+
     public Vector3 chargingHeavyPunchLeftOffset = Vector3.zero;
+    public float chargingHeavyPunchLeftRotationZ = 0f;
+    public float chargingHeavyPunchLeftScaleX = 1f;
 
     [Header("Aim Settings")]
     public float aimOffsetAngle = 0f;
-    public float aimProjectionDistance = 5f;
-    public Vector3 aimOriginOffset = Vector3.zero;
+    public float horizontalThreshold = 0.1f;
+    public float minimumAimRadius = 2f;
+
+    [System.Serializable]
+    public enum DisableType
+    {
+        SpriteRendererOnly,
+        EntireGameObject
+    }
+
+    [System.Serializable]
+    public struct DisableItem
+    {
+        public SpriteRenderer spriteRenderer;
+        public DisableType disableType;
+    }
+
+    [System.Serializable]
+    public class AnimationDisableControl
+    {
+        public DisableItem[] itemsToDisable;
+    }
+
+    [Header("Animation GameObject Controls")]
+    public AnimationDisableControl idleDisables;
+    public AnimationDisableControl shootDisables;
+    public AnimationDisableControl punchDisables;
+    public AnimationDisableControl uppercutDisables;
+    public AnimationDisableControl heavyPunchDisables;
+    public AnimationDisableControl chargingHeavyPunchDisables;
 
     private Vector3 defaultLocalPosition;
     [SerializeField] public bool IsFacingRight;
@@ -50,85 +118,183 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
 
     void LateUpdate()
     {
-        if (mainCamera == null || upperBody == null || targetGameObject == null || animationHandler == null) return;
+        if (mainCamera == null || upperBody == null || targetGameObject == null || animationHandler == null || aimReferencePoint == null) return;
 
         Vector3 mousePosition = Input.mousePosition;
-        mousePosition.z = 0;
-        mousePosition = mainCamera.ScreenToWorldPoint(mousePosition);
+        mousePosition.z = -mainCamera.transform.position.z;
+        Vector3 worldMousePosition = mainCamera.ScreenToWorldPoint(mousePosition);
 
-        Vector3 aimOrigin = upperBody.position + aimOriginOffset;
-        Vector3 direction = (mousePosition - aimOrigin).normalized;
+        // Get direction in world space
+        Vector3 directionToMouse = worldMousePosition - aimReferencePoint.position;
+        Vector3 direction = directionToMouse.normalized;
+        
+        if (virtualCamera != null)
+        {
+            direction = virtualCamera.transform.InverseTransformDirection(direction);
+        }
 
-        // For non-uppercut states, determine facing direction based on mouse position
+        // Handle direction switching
         if (!animationHandler.IsUppercutting)
         {
-            IsFacingRight = direction.x > 0;
+            Vector2 mousePos2D = new Vector2(worldMousePosition.x, worldMousePosition.y);
+            bool isInRightCollider = rightSideCollider.OverlapPoint(mousePos2D);
+            bool isInLeftCollider = leftSideCollider.OverlapPoint(mousePos2D);
+
+            // Debug visualization
+            Debug.DrawLine(transform.position, worldMousePosition, Color.yellow);
+            
+            // Only change direction if exactly one collider is detecting the point
+            if (isInRightCollider && !isInLeftCollider)
+            {
+                IsFacingRight = true;
+            }
+            else if (isInLeftCollider && !isInRightCollider)
+            {
+                IsFacingRight = false;
+            }
+            // If both or neither collider detects the point, keep current facing direction
         }
         else
         {
-            // For uppercut, use the last pressed A/D key
             IsFacingRight = animationHandler.LastNonZeroInput >= 0;
         }
 
-        // Calculate angle for rotation
+        // Calculate rotation angle
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + aimOffsetAngle;
+        float baseAngle = IsFacingRight ? angle : angle + 180f;
 
-        if (animationHandler.IsIdle || animationHandler.IsShooting)
-        {
-            // Full rotation following cursor
-            if (IsFacingRight)
-            {
-                upperBody.rotation = Quaternion.Euler(0, 0, angle);
-            }
-            else
-            {
-                upperBody.rotation = Quaternion.Euler(0, 0, angle + 180f);
-            }
-        }
-        else
-        {
-            // Face straight left or right
-            float straightAngle = IsFacingRight ? 0 : 180;
-            upperBody.rotation = Quaternion.Euler(0, 0, straightAngle);
-        }
-
-        // Handle scaling
+        // Apply scale and rotation
         upperBody.localScale = new Vector3(IsFacingRight ? 1 : -1, 1, 1);
-
-        // Apply offset immediately after determining the state
-        ApplyAnimationOffset();
+        ApplyAnimationOffset(baseAngle);
     }
 
-    void ApplyAnimationOffset()
+    void ApplyAnimationOffset(float baseRotation)
     {
+        float targetRotationZ = 0f;
+        float targetScaleX = 1f;
+        AnimationDisableControl currentDisables = null;
+        bool useMouseAim = true;  // Flag to determine if we should use mouse aim
+
         // Check states in priority order and directly set the offset
         if (playerAttack != null && playerAttack.IsChargingHeavyPunch)
         {
             targetOffset = IsFacingRight ? chargingHeavyPunchRightOffset : chargingHeavyPunchLeftOffset;
+            targetRotationZ = IsFacingRight ? chargingHeavyPunchRightRotationZ : chargingHeavyPunchLeftRotationZ;
+            targetScaleX = IsFacingRight ? chargingHeavyPunchRightScaleX : chargingHeavyPunchLeftScaleX;
+            currentDisables = chargingHeavyPunchDisables;
+            useMouseAim = false;  // Don't use mouse aim for heavy punch charging
         }
         else if (animationHandler.IsHeavyPunching)
         {
             targetOffset = IsFacingRight ? heavyPunchRightOffset : heavyPunchLeftOffset;
+            targetRotationZ = IsFacingRight ? heavyPunchRightRotationZ : heavyPunchLeftRotationZ;
+            targetScaleX = IsFacingRight ? heavyPunchRightScaleX : heavyPunchLeftScaleX;
+            currentDisables = heavyPunchDisables;
+            useMouseAim = false;  // Don't use mouse aim for heavy punching
         }
         else if (animationHandler.IsUppercutting)
         {
             targetOffset = IsFacingRight ? uppercutRightOffset : uppercutLeftOffset;
+            targetRotationZ = IsFacingRight ? uppercutRightRotationZ : uppercutLeftRotationZ;
+            targetScaleX = IsFacingRight ? uppercutRightScaleX : uppercutLeftScaleX;
+            currentDisables = uppercutDisables;
+            useMouseAim = false;  // Don't use mouse aim for uppercutting
         }
         else if (animationHandler.IsPunching)
         {
             targetOffset = IsFacingRight ? punchRightOffset : punchLeftOffset;
+            targetRotationZ = IsFacingRight ? punchRightRotationZ : punchLeftRotationZ;
+            targetScaleX = IsFacingRight ? punchRightScaleX : punchLeftScaleX;
+            currentDisables = punchDisables;
+            useMouseAim = false;  // Don't use mouse aim for punching
         }
         else if (animationHandler.IsShooting)
         {
             targetOffset = IsFacingRight ? shootRightOffset : shootLeftOffset;
+            targetRotationZ = IsFacingRight ? shootRightRotationZ : shootLeftRotationZ;
+            targetScaleX = IsFacingRight ? shootRightScaleX : shootLeftScaleX;
+            currentDisables = shootDisables;
         }
         else // Idle state
         {
             targetOffset = IsFacingRight ? idleRightOffset : idleLeftOffset;
+            targetRotationZ = IsFacingRight ? idleRightRotationZ : idleLeftRotationZ;
+            targetScaleX = IsFacingRight ? idleRightScaleX : idleLeftScaleX;
+            currentDisables = idleDisables;
         }
 
-        // Directly set the position
+        // Apply position offset
         targetGameObject.localPosition = defaultLocalPosition + targetOffset;
+        
+        // Apply rotation based on whether we should use mouse aim or not
+        float finalRotation = useMouseAim ? baseRotation + targetRotationZ : targetRotationZ;
+        upperBody.rotation = Quaternion.Euler(0, 0, finalRotation);
+        
+        // Apply scale (maintaining Y and Z scale)
+        Vector3 currentScale = targetGameObject.localScale;
+        targetGameObject.localScale = new Vector3(targetScaleX * (IsFacingRight ? 1 : -1), currentScale.y, currentScale.z);
+
+        // Handle disabling objects
+        HandleDisableControls(currentDisables);
+    }
+
+    private void HandleDisableControls(AnimationDisableControl currentState)
+    {
+        // First enable everything
+        EnableAllItems();
+
+        // Then disable the items for the current state
+        if (currentState != null && currentState.itemsToDisable != null)
+        {
+            foreach (DisableItem item in currentState.itemsToDisable)
+            {
+                if (item.spriteRenderer != null)
+                {
+                    if (item.disableType == DisableType.EntireGameObject)
+                    {
+                        item.spriteRenderer.gameObject.SetActive(false);
+                    }
+                    else
+                    {
+                        item.spriteRenderer.enabled = false;
+                    }
+                }
+            }
+        }
+    }
+
+    private void EnableAllItems()
+    {
+        AnimationDisableControl[] allStates = new AnimationDisableControl[] 
+        {
+            idleDisables,
+            shootDisables,
+            punchDisables,
+            uppercutDisables,
+            heavyPunchDisables,
+            chargingHeavyPunchDisables
+        };
+
+        foreach (var state in allStates)
+        {
+            if (state.itemsToDisable != null)
+            {
+                foreach (DisableItem item in state.itemsToDisable)
+                {
+                    if (item.spriteRenderer != null)
+                    {
+                        if (item.disableType == DisableType.EntireGameObject)
+                        {
+                            item.spriteRenderer.gameObject.SetActive(true);
+                        }
+                        else
+                        {
+                            item.spriteRenderer.enabled = true;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public void ResetToDefaultPosition()
