@@ -5,6 +5,9 @@ public class PlayerAttack : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private RotateUpperBodyTowardMouse upperBodyRotation;
+    public GameObject leftSideTrigger;  // GameObject with trigger collider for left side
+    public GameObject rightSideTrigger; // GameObject with trigger collider for right side
+    [SerializeField] private PlayerShoot shootEffects;  // Reference to the shoot effects
 
     [Header("Attack Settings")]
     public float attackCooldown = 0.5f;
@@ -44,6 +47,15 @@ public class PlayerAttack : MonoBehaviour
     public GameObject hitbox;
     public float hitboxFlipOffset = 1f;
 
+    [Header("Shooting Settings")]
+    public GameObject bulletPrefab;
+    public float bulletSpeed = 20f;
+    public Transform firePoint;
+    public float fadeDelay = 1f;     // How long before bullet starts fading
+    public float fadeDuration = 1f;  // How long the fade takes
+    public float rightAimRotation = 0f;    // Rotation when aiming right
+    public float leftAimRotation = 180f;   // Rotation when aiming left
+
     [SerializeField] private bool playerIsFacingRight;
 
     private Rigidbody2D rb;
@@ -65,6 +77,9 @@ public class PlayerAttack : MonoBehaviour
     {
         rb = GetComponent<Rigidbody2D>();
         movement = GetComponent<bora>();
+        
+        if (shootEffects == null)
+            shootEffects = GetComponent<PlayerShoot>();
 
         if (upperBodyRotation == null)
         {
@@ -141,12 +156,72 @@ public class PlayerAttack : MonoBehaviour
 
     void Shoot()
     {
-        // Implement shooting logic here
+        if (bulletPrefab == null || firePoint == null || leftSideTrigger == null || rightSideTrigger == null || 
+            upperBodyRotation == null || upperBodyRotation.aimReferencePoint == null) return;
+
+        // Get the mouse position in world space using the same camera as the rotation script
+        Vector3 mousePosition = Input.mousePosition;
+        mousePosition.z = -upperBodyRotation.mainCamera.transform.position.z;
+        Vector3 worldMousePosition = upperBodyRotation.mainCamera.ScreenToWorldPoint(mousePosition);
+
+        // Get direction in world space using the aim reference point
+        Vector3 directionToMouse = worldMousePosition - upperBodyRotation.aimReferencePoint.position;
+        Vector3 direction = directionToMouse.normalized;
+        
+        // Transform direction using virtual camera if available
+        if (upperBodyRotation.virtualCamera != null)
+        {
+            direction = upperBodyRotation.virtualCamera.transform.InverseTransformDirection(direction);
+        }
+        
+        // Check which side we're aiming using the colliders
+        Vector2 mousePos2D = new Vector2(worldMousePosition.x, worldMousePosition.y);
+        bool isAimingRight = rightSideTrigger.GetComponent<Collider2D>().OverlapPoint(mousePos2D);
+        bool isAimingLeft = leftSideTrigger.GetComponent<Collider2D>().OverlapPoint(mousePos2D);
+
+        // Create the bullet at the firepoint position
+        GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
+        
+        // Configure the pre-existing bullet behavior
+        BulletBehave bulletBehavior = bullet.GetComponent<BulletBehave>();
+        if (bulletBehavior != null)
+        {
+            bulletBehavior.fadeDelay = fadeDelay;
+            bulletBehavior.fadeDuration = fadeDuration;
+            bulletBehavior.enemyLayer = enemyLayers;
+        }
+        
+        // Calculate the angle based on direction
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + upperBodyRotation.aimOffsetAngle;
+        
+        // Always rotate -90 degrees to maintain consistent orientation
+        float rotation = angle - 90f;
+
+        // Apply rotation
+        bullet.transform.rotation = Quaternion.Euler(0, 0, rotation);
+        
+        // Get bullet's Rigidbody2D and set its velocity using the transformed direction
+        Rigidbody2D rb = bullet.GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.linearVelocity = direction * bulletSpeed;
+        }
+
+        // Play shoot effects
+        if (shootEffects != null)
+        {
+            shootEffects.PlayShootEffects();
+        }
     }
 
     void NormalAttack()
     {
-        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayers);
+        // Use flipScaleObject if available, otherwise fallback to attackPoint
+        Transform attackSource = (upperBodyRotation != null && upperBodyRotation.flipScaleObject != null) 
+            ? upperBodyRotation.flipScaleObject.transform 
+            : attackPoint;
+
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackSource.position, attackRange, enemyLayers);
 
         foreach (Collider2D enemy in hitEnemies)
         {
@@ -164,14 +239,30 @@ public class PlayerAttack : MonoBehaviour
         IsUppercutting = true;
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, uppercutForce);
 
-        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayers);
+        // Get mouse position and determine direction based on aim triggers
+        Vector3 mousePosition = Input.mousePosition;
+        mousePosition.z = -upperBodyRotation.mainCamera.transform.position.z;
+        Vector3 worldMousePosition = upperBodyRotation.mainCamera.ScreenToWorldPoint(mousePosition);
+        Vector2 mousePos2D = new Vector2(worldMousePosition.x, worldMousePosition.y);
+        
+        bool isAimingRight = rightSideTrigger.GetComponent<Collider2D>().OverlapPoint(mousePos2D);
+        bool isAimingLeft = leftSideTrigger.GetComponent<Collider2D>().OverlapPoint(mousePos2D);
+
+        // Use flipScaleObject if available, otherwise fallback to attackPoint
+        Transform attackSource = (upperBodyRotation != null && upperBodyRotation.flipScaleObject != null) 
+            ? upperBodyRotation.flipScaleObject.transform 
+            : attackPoint;
+
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackSource.position, attackRange, enemyLayers);
 
         foreach (Collider2D enemy in hitEnemies)
         {
             Rigidbody2D enemyRb = enemy.GetComponent<Rigidbody2D>();
             if (enemyRb != null)
             {
-                enemyRb.linearVelocity = new Vector2(enemyRb.linearVelocity.x, uppercutForce * uppercutEnemyMultiplier);
+                // Use the aim-based direction for the uppercut
+                float directionMultiplier = isAimingRight ? 1 : -1;
+                enemyRb.linearVelocity = new Vector2(directionMultiplier * uppercutForce * 0.5f, uppercutForce * uppercutEnemyMultiplier);
             }
         }
 

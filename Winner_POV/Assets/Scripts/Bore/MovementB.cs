@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Events;
 using TMPro;
+using System.Collections;
 
 public class bora : MonoBehaviour
 {
@@ -51,6 +52,15 @@ public class bora : MonoBehaviour
     public float bhopMultiplier = 1f;
     private float lastVelocityBeforeLanding;
     private float preservedSpeed;
+
+    [Header("Wall Slide Settings")]
+    public GameObject objectToDisable; // Reference to the GameObject to disable
+
+    [Header("Collision Detection")]
+    public float groundAngleThreshold = 0.5f; // Angle threshold to detect ground
+    public float wallAngleThreshold = 0.8f;   // Angle threshold to detect walls
+    private ContactPoint2D[] contacts = new ContactPoint2D[4]; // Cache contact points
+    private int contactCount;
 
     private Rigidbody2D rb;
     private bool canJump = true;
@@ -236,6 +246,12 @@ public class bora : MonoBehaviour
     {
         if (isWallSliding)
         {
+            // Disable the GameObject when wall sliding
+            if (objectToDisable != null)
+            {
+                objectToDisable.SetActive(false);
+            }
+
             bool holdingTowardsWall = (isWallRight && moveX > 0) || (isWallLeft && moveX < 0);
 
             if (holdingTowardsWall)
@@ -266,6 +282,14 @@ public class bora : MonoBehaviour
                 isWallSliding = false;
                 canWallJump = false;
                 OnWallJump?.Invoke();
+            }
+        }
+        else
+        {
+            // Enable the GameObject when not wall sliding
+            if (objectToDisable != null)
+            {
+                objectToDisable.SetActive(true);
             }
         }
     }
@@ -340,65 +364,112 @@ public class bora : MonoBehaviour
 
     void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.GetContact(0).normal.y > 0.5f)
+        contactCount = collision.GetContacts(contacts);
+        bool foundGround = false;
+
+        for (int i = 0; i < contactCount; i++)
         {
-            bool wasGrounded = canJump;
-            canJump = true;
-            isWallSliding = false;
-            canWallJump = false;
-
-            isWallLeft = false;
-            isWallRight = false;
-
-            if (!Input.GetKey(KeyCode.Space))
+            Vector2 normal = contacts[i].normal;
+            
+            // Ground check (normal pointing up)
+            if (normal.y > groundAngleThreshold)
             {
-                rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
-                preservedSpeed = 0;
-            }
-            else
-            {
-                preservedSpeed = lastVelocityBeforeLanding * bhopMultiplier;
-            }
+                foundGround = true;
+                bool wasGrounded = canJump;
+                canJump = true;
+                isWallSliding = false;
+                canWallJump = false;
+                isWallLeft = false;
+                isWallRight = false;
 
-            if (!wasGrounded)
-            {
-                OnLand?.Invoke();
+                if (!Input.GetKey(KeyCode.Space))
+                {
+                    rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+                    preservedSpeed = 0;
+                }
+                else
+                {
+                    preservedSpeed = lastVelocityBeforeLanding * bhopMultiplier;
+                }
+
+                if (!wasGrounded)
+                {
+                    OnLand?.Invoke();
+                }
+                break;
             }
+        }
+
+        if (!foundGround)
+        {
+            CheckForWalls(collision);
+        }
+    }
+
+    void OnCollisionStay2D(Collision2D collision)
+    {
+        contactCount = collision.GetContacts(contacts);
+        bool foundGround = false;
+
+        for (int i = 0; i < contactCount; i++)
+        {
+            Vector2 normal = contacts[i].normal;
+            
+            // Ground check
+            if (normal.y > groundAngleThreshold)
+            {
+                foundGround = true;
+                canJump = true;
+                isWallSliding = false;
+                canWallJump = false;
+                isWallLeft = false;
+                isWallRight = false;
+                break;
+            }
+        }
+
+        if (!foundGround && !canJump)
+        {
+            CheckForWalls(collision);
         }
     }
 
     void OnCollisionExit2D(Collision2D collision)
     {
-        canJump = false;
-        isWallSliding = false;
-        isWallLeft = false;
-        isWallRight = false;
+        // Small delay before removing ground state to prevent getting stuck
+        StartCoroutine(DelayedGroundStateReset());
     }
 
-    void OnCollisionStay2D(Collision2D collision)
+    private IEnumerator DelayedGroundStateReset()
     {
-        if (collision.GetContact(0).normal.y > 0.5f)
+        yield return new WaitForSeconds(0.1f); // Small delay
+        
+        // Only reset if we're not in contact with anything
+        if (!Physics2D.IsTouchingLayers(GetComponent<Collider2D>()))
         {
-            canJump = true;
+            canJump = false;
             isWallSliding = false;
-            canWallJump = false;
-
             isWallLeft = false;
             isWallRight = false;
-
-            return;
         }
+    }
 
-        if (!canJump && ((1 << collision.gameObject.layer) & wallLayer) != 0)
+    private void CheckForWalls(Collision2D collision)
+    {
+        contactCount = collision.GetContacts(contacts);
+        
+        for (int i = 0; i < contactCount; i++)
         {
-            Vector2 normal = collision.GetContact(0).normal;
-            if (Mathf.Abs(normal.x) > 0.5f)
+            Vector2 normal = contacts[i].normal;
+            
+            // Wall check (normal pointing sideways)
+            if (Mathf.Abs(normal.x) > wallAngleThreshold)
             {
                 isWallSliding = true;
                 canWallJump = true;
-
                 isWallLeft = normal.x > 0;
                 isWallRight = normal.x < 0;
+                return;
             }
         }
     }
