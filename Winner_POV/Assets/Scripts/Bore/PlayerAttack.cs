@@ -182,11 +182,14 @@ public class PlayerAttack : MonoBehaviour
         // Create the bullet at the firepoint position
         GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
         
-        // Add and configure the bullet behavior
-        BulletBehavior bulletBehavior = bullet.AddComponent<BulletBehavior>();
-        bulletBehavior.fadeDelay = fadeDelay;
-        bulletBehavior.fadeDuration = fadeDuration;
-        bulletBehavior.enemyLayer = enemyLayers;
+        // Configure the pre-existing bullet behavior
+        BulletBehave bulletBehavior = bullet.GetComponent<BulletBehave>();
+        if (bulletBehavior != null)
+        {
+            bulletBehavior.fadeDelay = fadeDelay;
+            bulletBehavior.fadeDuration = fadeDuration;
+            bulletBehavior.enemyLayer = enemyLayers;
+        }
         
         // Calculate the angle based on direction
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + upperBodyRotation.aimOffsetAngle;
@@ -213,7 +216,12 @@ public class PlayerAttack : MonoBehaviour
 
     void NormalAttack()
     {
-        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayers);
+        // Use flipScaleObject if available, otherwise fallback to attackPoint
+        Transform attackSource = (upperBodyRotation != null && upperBodyRotation.flipScaleObject != null) 
+            ? upperBodyRotation.flipScaleObject.transform 
+            : attackPoint;
+
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackSource.position, attackRange, enemyLayers);
 
         foreach (Collider2D enemy in hitEnemies)
         {
@@ -231,14 +239,30 @@ public class PlayerAttack : MonoBehaviour
         IsUppercutting = true;
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, uppercutForce);
 
-        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayers);
+        // Get mouse position and determine direction based on aim triggers
+        Vector3 mousePosition = Input.mousePosition;
+        mousePosition.z = -upperBodyRotation.mainCamera.transform.position.z;
+        Vector3 worldMousePosition = upperBodyRotation.mainCamera.ScreenToWorldPoint(mousePosition);
+        Vector2 mousePos2D = new Vector2(worldMousePosition.x, worldMousePosition.y);
+        
+        bool isAimingRight = rightSideTrigger.GetComponent<Collider2D>().OverlapPoint(mousePos2D);
+        bool isAimingLeft = leftSideTrigger.GetComponent<Collider2D>().OverlapPoint(mousePos2D);
+
+        // Use flipScaleObject if available, otherwise fallback to attackPoint
+        Transform attackSource = (upperBodyRotation != null && upperBodyRotation.flipScaleObject != null) 
+            ? upperBodyRotation.flipScaleObject.transform 
+            : attackPoint;
+
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackSource.position, attackRange, enemyLayers);
 
         foreach (Collider2D enemy in hitEnemies)
         {
             Rigidbody2D enemyRb = enemy.GetComponent<Rigidbody2D>();
             if (enemyRb != null)
             {
-                enemyRb.linearVelocity = new Vector2(enemyRb.linearVelocity.x, uppercutForce * uppercutEnemyMultiplier);
+                // Use the aim-based direction for the uppercut
+                float directionMultiplier = isAimingRight ? 1 : -1;
+                enemyRb.linearVelocity = new Vector2(directionMultiplier * uppercutForce * 0.5f, uppercutForce * uppercutEnemyMultiplier);
             }
         }
 

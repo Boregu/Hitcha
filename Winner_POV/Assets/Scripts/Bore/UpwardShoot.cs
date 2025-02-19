@@ -13,9 +13,10 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
     public CinemachineVirtualCamera virtualCamera; // Reference to virtual camera
     public Collider2D leftSideCollider;  // Add reference to left side trigger
     public Collider2D rightSideCollider; // Add reference to right side trigger
+    public GameObject flipScaleObject; // New reference for the object to flip scale
 
     [Header("Offsets for Animations (Right)")]
-     public Vector3 idleRightOffset = Vector3.zero;
+    public Vector3 idleRightOffset = Vector3.zero;
     public float idleRightRotationZ = 0f;
     public float idleRightScaleX = 1f;
 
@@ -77,25 +78,27 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
     }
 
     [System.Serializable]
-    public struct DisableItem
+    public struct ObjectControl
     {
-        public SpriteRenderer spriteRenderer;
+        public GameObject targetObject;
+        public SpriteRenderer spriteRenderer; // Optional: only needed if using SpriteRendererOnly
         public DisableType disableType;
+        public bool shouldEnable; // true to enable, false to disable
     }
 
     [System.Serializable]
-    public class AnimationDisableControl
+    public class AnimationObjectControl
     {
-        public DisableItem[] itemsToDisable;
+        public ObjectControl[] objectControls; // Array of object controls with their enable/disable states
     }
 
     [Header("Animation GameObject Controls")]
-    public AnimationDisableControl idleDisables;
-    public AnimationDisableControl shootDisables;
-    public AnimationDisableControl punchDisables;
-    public AnimationDisableControl uppercutDisables;
-    public AnimationDisableControl heavyPunchDisables;
-    public AnimationDisableControl chargingHeavyPunchDisables;
+    public AnimationObjectControl idleControls;
+    public AnimationObjectControl shootControls;
+    public AnimationObjectControl punchControls;
+    public AnimationObjectControl uppercutControls;
+    public AnimationObjectControl heavyPunchControls;
+    public AnimationObjectControl chargingHeavyPunchControls;
 
     private Vector3 defaultLocalPosition;
     [SerializeField] public bool IsFacingRight;
@@ -147,10 +150,20 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
             if (isInRightCollider && !isInLeftCollider)
             {
                 IsFacingRight = true;
+                if (flipScaleObject != null)
+                {
+                    Vector3 scale = flipScaleObject.transform.localScale;
+                    flipScaleObject.transform.localScale = new Vector3(-1 * Mathf.Abs(scale.x), scale.y, scale.z);
+                }
             }
             else if (isInLeftCollider && !isInRightCollider)
             {
                 IsFacingRight = false;
+                if (flipScaleObject != null)
+                {
+                    Vector3 scale = flipScaleObject.transform.localScale;
+                    flipScaleObject.transform.localScale = new Vector3(Mathf.Abs(scale.x), scale.y, scale.z);
+                }
             }
             // If both or neither collider detects the point, keep current facing direction
         }
@@ -172,8 +185,8 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
     {
         float targetRotationZ = 0f;
         float targetScaleX = 1f;
-        AnimationDisableControl currentDisables = null;
-        bool useMouseAim = true;  // Flag to determine if we should use mouse aim
+        AnimationObjectControl currentControls = null;
+        float finalRotation = baseRotation; // Store the base rotation
 
         // Check states in priority order and directly set the offset
         if (playerAttack != null && playerAttack.IsChargingHeavyPunch)
@@ -181,83 +194,80 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
             targetOffset = IsFacingRight ? chargingHeavyPunchRightOffset : chargingHeavyPunchLeftOffset;
             targetRotationZ = IsFacingRight ? chargingHeavyPunchRightRotationZ : chargingHeavyPunchLeftRotationZ;
             targetScaleX = IsFacingRight ? chargingHeavyPunchRightScaleX : chargingHeavyPunchLeftScaleX;
-            currentDisables = chargingHeavyPunchDisables;
-            useMouseAim = false;  // Don't use mouse aim for heavy punch charging
+            currentControls = chargingHeavyPunchControls;
         }
         else if (animationHandler.IsHeavyPunching)
         {
             targetOffset = IsFacingRight ? heavyPunchRightOffset : heavyPunchLeftOffset;
             targetRotationZ = IsFacingRight ? heavyPunchRightRotationZ : heavyPunchLeftRotationZ;
             targetScaleX = IsFacingRight ? heavyPunchRightScaleX : heavyPunchLeftScaleX;
-            currentDisables = heavyPunchDisables;
-            useMouseAim = false;  // Don't use mouse aim for heavy punching
+            currentControls = heavyPunchControls;
+            finalRotation = IsFacingRight ? 0 : 180;
         }
         else if (animationHandler.IsUppercutting)
         {
             targetOffset = IsFacingRight ? uppercutRightOffset : uppercutLeftOffset;
             targetRotationZ = IsFacingRight ? uppercutRightRotationZ : uppercutLeftRotationZ;
             targetScaleX = IsFacingRight ? uppercutRightScaleX : uppercutLeftScaleX;
-            currentDisables = uppercutDisables;
-            useMouseAim = false;  // Don't use mouse aim for uppercutting
+            currentControls = uppercutControls;
+            finalRotation = IsFacingRight ? 0 : 180;
         }
         else if (animationHandler.IsPunching)
         {
             targetOffset = IsFacingRight ? punchRightOffset : punchLeftOffset;
             targetRotationZ = IsFacingRight ? punchRightRotationZ : punchLeftRotationZ;
             targetScaleX = IsFacingRight ? punchRightScaleX : punchLeftScaleX;
-            currentDisables = punchDisables;
-            useMouseAim = false;  // Don't use mouse aim for punching
+            currentControls = punchControls;
         }
         else if (animationHandler.IsShooting)
         {
             targetOffset = IsFacingRight ? shootRightOffset : shootLeftOffset;
             targetRotationZ = IsFacingRight ? shootRightRotationZ : shootLeftRotationZ;
             targetScaleX = IsFacingRight ? shootRightScaleX : shootLeftScaleX;
-            currentDisables = shootDisables;
+            currentControls = shootControls;
         }
         else // Idle state
         {
             targetOffset = IsFacingRight ? idleRightOffset : idleLeftOffset;
             targetRotationZ = IsFacingRight ? idleRightRotationZ : idleLeftRotationZ;
             targetScaleX = IsFacingRight ? idleRightScaleX : idleLeftScaleX;
-            currentDisables = idleDisables;
+            currentControls = idleControls;
         }
 
         // Apply position offset
         targetGameObject.localPosition = defaultLocalPosition + targetOffset;
         
-        // Apply rotation based on whether we should use mouse aim or not
-        float finalRotation = useMouseAim ? baseRotation + targetRotationZ : targetRotationZ;
-        upperBody.rotation = Quaternion.Euler(0, 0, finalRotation);
+        // Apply combined rotation
+        upperBody.rotation = Quaternion.Euler(0, 0, finalRotation + targetRotationZ);
         
         // Apply scale (maintaining Y and Z scale)
         Vector3 currentScale = targetGameObject.localScale;
         targetGameObject.localScale = new Vector3(targetScaleX * (IsFacingRight ? 1 : -1), currentScale.y, currentScale.z);
 
-        // Handle disabling objects
-        HandleDisableControls(currentDisables);
+        // Handle object controls
+        HandleObjectControls(currentControls);
     }
 
-    private void HandleDisableControls(AnimationDisableControl currentState)
+    private void HandleObjectControls(AnimationObjectControl currentState)
     {
-        // First enable everything
+        if (currentState?.objectControls == null) return;
+
+        // First enable everything back to default state
         EnableAllItems();
 
-        // Then disable the items for the current state
-        if (currentState != null && currentState.itemsToDisable != null)
+        // Then apply the current state's controls
+        foreach (ObjectControl control in currentState.objectControls)
         {
-            foreach (DisableItem item in currentState.itemsToDisable)
+            if (control.targetObject != null)
             {
-                if (item.spriteRenderer != null)
+                if (control.disableType == DisableType.EntireGameObject)
                 {
-                    if (item.disableType == DisableType.EntireGameObject)
-                    {
-                        item.spriteRenderer.gameObject.SetActive(false);
-                    }
-                    else
-                    {
-                        item.spriteRenderer.enabled = false;
-                    }
+                    control.targetObject.SetActive(control.shouldEnable);
+                }
+                else if (control.spriteRenderer != null)
+                {
+                    control.targetObject.SetActive(true);
+                    control.spriteRenderer.enabled = control.shouldEnable;
                 }
             }
         }
@@ -265,31 +275,28 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
 
     private void EnableAllItems()
     {
-        AnimationDisableControl[] allStates = new AnimationDisableControl[] 
+        AnimationObjectControl[] allStates = new AnimationObjectControl[] 
         {
-            idleDisables,
-            shootDisables,
-            punchDisables,
-            uppercutDisables,
-            heavyPunchDisables,
-            chargingHeavyPunchDisables
+            idleControls,
+            shootControls,
+            punchControls,
+            uppercutControls,
+            heavyPunchControls,
+            chargingHeavyPunchControls
         };
 
         foreach (var state in allStates)
         {
-            if (state.itemsToDisable != null)
+            if (state?.objectControls != null)
             {
-                foreach (DisableItem item in state.itemsToDisable)
+                foreach (ObjectControl control in state.objectControls)
                 {
-                    if (item.spriteRenderer != null)
+                    if (control.targetObject != null)
                     {
-                        if (item.disableType == DisableType.EntireGameObject)
+                        control.targetObject.SetActive(true);
+                        if (control.spriteRenderer != null)
                         {
-                            item.spriteRenderer.gameObject.SetActive(true);
-                        }
-                        else
-                        {
-                            item.spriteRenderer.enabled = true;
+                            control.spriteRenderer.enabled = true;
                         }
                     }
                 }

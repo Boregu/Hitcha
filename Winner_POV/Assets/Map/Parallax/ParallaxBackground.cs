@@ -21,7 +21,7 @@ public class ParallaxBackground : MonoBehaviour
         SetLayers();
     }
 
-    void LateUpdate()
+    void FixedUpdate()
     {
         if (parallaxCamera != null)
         {
