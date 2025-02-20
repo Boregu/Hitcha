@@ -1,10 +1,12 @@
 using UnityEngine;
 using Cinemachine; // Add Cinemachine namespace
+using System.Collections.Generic;
 
 public class RotateUpperBodyTowardMouse : MonoBehaviour
 {
     [Header("References")]
     public Transform upperBody;
+    public Transform secondaryAimObject; // Secondary aim object
     public Camera mainCamera;
     public AnimationHandler animationHandler;
     public Transform targetGameObject;
@@ -14,6 +16,11 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
     public Collider2D leftSideCollider;  // Add reference to left side trigger
     public Collider2D rightSideCollider; // Add reference to right side trigger
     public GameObject flipScaleObject; // New reference for the object to flip scale
+
+    [Header("Secondary Aim Settings")]
+    public bool useSecondaryAim = true;
+    public Vector3 secondaryAimOffset = Vector3.zero;
+    public float secondaryAimRotationOffset = 0f;
 
     [Header("Offsets for Animations (Right)")]
     public Vector3 idleRightOffset = Vector3.zero;
@@ -78,33 +85,35 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
     }
 
     [System.Serializable]
-    public struct ObjectControl
+    public struct DisableItem
     {
-        public GameObject targetObject;
-        public SpriteRenderer spriteRenderer; // Optional: only needed if using SpriteRendererOnly
+        public SpriteRenderer spriteRenderer;
         public DisableType disableType;
-        public bool shouldEnable; // true to enable, false to disable
     }
 
     [System.Serializable]
-    public class AnimationObjectControl
+    public class AnimationDisableControl
     {
-        public ObjectControl[] objectControls; // Array of object controls with their enable/disable states
+        public DisableItem[] itemsToDisable;
     }
 
     [Header("Animation GameObject Controls")]
-    public AnimationObjectControl idleControls;
-    public AnimationObjectControl shootControls;
-    public AnimationObjectControl punchControls;
-    public AnimationObjectControl uppercutControls;
-    public AnimationObjectControl heavyPunchControls;
-    public AnimationObjectControl chargingHeavyPunchControls;
+    public AnimationDisableControl idleDisables;
+    public AnimationDisableControl shootDisables;
+    public AnimationDisableControl punchDisables;
+    public AnimationDisableControl uppercutDisables;
+    public AnimationDisableControl heavyPunchDisables;
+    public AnimationDisableControl chargingHeavyPunchDisables;
 
     private Vector3 defaultLocalPosition;
+    private Vector3 secondaryDefaultLocalPosition;
     [SerializeField] public bool IsFacingRight;
     private PlayerAttack playerAttack;
     private Vector3 currentOffset;
     private Vector3 targetOffset;
+
+    private Dictionary<Transform, float> originalChildYPositions = new Dictionary<Transform, float>();
+    private Dictionary<Transform, float> secondaryChildYPositions = new Dictionary<Transform, float>();
 
     void Start()
     {
@@ -113,10 +122,47 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
         if (targetGameObject == null) Debug.LogError("Target GameObject not assigned!");
         if (animationHandler == null) Debug.LogError("AnimationHandler not assigned!");
 
+        // Store original Y positions of children
+        if (targetGameObject != null)
+        {
+            foreach (Transform child in targetGameObject)
+            {
+                originalChildYPositions[child] = child.localPosition.y;
+            }
+        }
+
+        if (secondaryAimObject != null)
+        {
+            foreach (Transform child in secondaryAimObject)
+            {
+                secondaryChildYPositions[child] = child.localPosition.y;
+            }
+        }
+
         defaultLocalPosition = targetGameObject.localPosition;
+        if (secondaryAimObject != null)
+        {
+            secondaryDefaultLocalPosition = secondaryAimObject.localPosition;
+        }
         playerAttack = GetComponent<PlayerAttack>();
         currentOffset = Vector3.zero;
         targetOffset = Vector3.zero;
+    }
+
+    void UpdateChildPositions(Transform parent, Dictionary<Transform, float> originalPositions, bool isFacingRight)
+    {
+        if (parent != null)
+        {
+            foreach (Transform child in parent)
+            {
+                if (originalPositions.ContainsKey(child))
+                {
+                    Vector3 childPos = child.localPosition;
+                    childPos.y = isFacingRight ? originalPositions[child] : -originalPositions[child];
+                    child.localPosition = childPos;
+                }
+            }
+        }
     }
 
     void LateUpdate()
@@ -127,8 +173,11 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
         mousePosition.z = -mainCamera.transform.position.z;
         Vector3 worldMousePosition = mainCamera.ScreenToWorldPoint(mousePosition);
 
-        // Get direction in world space
-        Vector3 directionToMouse = worldMousePosition - aimReferencePoint.position;
+        // Store the original aim reference point position
+        Vector3 originalAimPosition = aimReferencePoint.position;
+
+        // Calculate aim direction before applying any offsets
+        Vector3 directionToMouse = worldMousePosition - originalAimPosition;
         Vector3 direction = directionToMouse.normalized;
         
         if (virtualCamera != null)
@@ -137,55 +186,78 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
         }
 
         // Handle direction switching
-        if (!animationHandler.IsUppercutting)
-        {
-            Vector2 mousePos2D = new Vector2(worldMousePosition.x, worldMousePosition.y);
-            bool isInRightCollider = rightSideCollider.OverlapPoint(mousePos2D);
-            bool isInLeftCollider = leftSideCollider.OverlapPoint(mousePos2D);
+        Vector2 mousePos2D = new Vector2(worldMousePosition.x, worldMousePosition.y);
+        bool isInRightCollider = rightSideCollider.OverlapPoint(mousePos2D);
+        bool isInLeftCollider = leftSideCollider.OverlapPoint(mousePos2D);
 
-            // Debug visualization
-            Debug.DrawLine(transform.position, worldMousePosition, Color.yellow);
-            
-            // Only change direction if exactly one collider is detecting the point
+        // Debug visualization
+        Debug.DrawLine(transform.position, worldMousePosition, Color.yellow);
+
+        // Update facing direction based on colliders
+        if (!animationHandler.IsPunching)
+        {
             if (isInRightCollider && !isInLeftCollider)
             {
                 IsFacingRight = true;
-                if (flipScaleObject != null)
-                {
-                    Vector3 scale = flipScaleObject.transform.localScale;
-                    flipScaleObject.transform.localScale = new Vector3(-1 * Mathf.Abs(scale.x), scale.y, scale.z);
-                }
             }
             else if (isInLeftCollider && !isInRightCollider)
             {
                 IsFacingRight = false;
-                if (flipScaleObject != null)
-                {
-                    Vector3 scale = flipScaleObject.transform.localScale;
-                    flipScaleObject.transform.localScale = new Vector3(Mathf.Abs(scale.x), scale.y, scale.z);
-                }
             }
-            // If both or neither collider detects the point, keep current facing direction
         }
         else
         {
-            IsFacingRight = animationHandler.LastNonZeroInput >= 0;
+            // For punching, use horizontal direction
+            IsFacingRight = transform.position.x < worldMousePosition.x;
         }
 
-        // Calculate rotation angle
+        // Update child positions based on facing direction
+        UpdateChildPositions(targetGameObject, originalChildYPositions, IsFacingRight);
+
+        // Update flip scale object
+        if (flipScaleObject != null)
+        {
+            Vector3 scale = flipScaleObject.transform.localScale;
+            scale.x = 1f;
+            flipScaleObject.transform.localScale = scale;
+        }
+
+        // Calculate rotation angle based on the original aim position
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + aimOffsetAngle;
         float baseAngle = IsFacingRight ? angle : angle + 180f;
 
-        // Apply scale and rotation
+        // Apply scale and rotation to main object
         upperBody.localScale = new Vector3(IsFacingRight ? 1 : -1, 1, 1);
+        
+        // Apply animation offset after calculating aim
         ApplyAnimationOffset(baseAngle);
+
+        // Handle secondary aim object
+        if (useSecondaryAim && secondaryAimObject != null)
+        {
+            // Apply rotation to secondary object using the original aim calculation
+            float secondaryAngle = angle + secondaryAimRotationOffset;
+            secondaryAimObject.rotation = Quaternion.Euler(0, 0, secondaryAngle);
+            
+            // Apply position offset and scale
+            secondaryAimObject.localPosition = secondaryDefaultLocalPosition + 
+                (IsFacingRight ? secondaryAimOffset : new Vector3(-secondaryAimOffset.x, secondaryAimOffset.y, secondaryAimOffset.z));
+            
+            // Keep scale always at 1
+            Vector3 secondaryScale = secondaryAimObject.localScale;
+            secondaryScale.x = 1f;
+            secondaryAimObject.localScale = secondaryScale;
+
+            // Update secondary object's child positions
+            UpdateChildPositions(secondaryAimObject, secondaryChildYPositions, IsFacingRight);
+        }
     }
 
     void ApplyAnimationOffset(float baseRotation)
     {
         float targetRotationZ = 0f;
         float targetScaleX = 1f;
-        AnimationObjectControl currentControls = null;
+        AnimationDisableControl currentDisables = null;
         float finalRotation = baseRotation; // Store the base rotation
 
         // Check states in priority order and directly set the offset
@@ -194,14 +266,15 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
             targetOffset = IsFacingRight ? chargingHeavyPunchRightOffset : chargingHeavyPunchLeftOffset;
             targetRotationZ = IsFacingRight ? chargingHeavyPunchRightRotationZ : chargingHeavyPunchLeftRotationZ;
             targetScaleX = IsFacingRight ? chargingHeavyPunchRightScaleX : chargingHeavyPunchLeftScaleX;
-            currentControls = chargingHeavyPunchControls;
+            currentDisables = chargingHeavyPunchDisables;
         }
         else if (animationHandler.IsHeavyPunching)
         {
             targetOffset = IsFacingRight ? heavyPunchRightOffset : heavyPunchLeftOffset;
             targetRotationZ = IsFacingRight ? heavyPunchRightRotationZ : heavyPunchLeftRotationZ;
             targetScaleX = IsFacingRight ? heavyPunchRightScaleX : heavyPunchLeftScaleX;
-            currentControls = heavyPunchControls;
+            currentDisables = heavyPunchDisables;
+            // Override rotation for heavy punch
             finalRotation = IsFacingRight ? 0 : 180;
         }
         else if (animationHandler.IsUppercutting)
@@ -209,7 +282,8 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
             targetOffset = IsFacingRight ? uppercutRightOffset : uppercutLeftOffset;
             targetRotationZ = IsFacingRight ? uppercutRightRotationZ : uppercutLeftRotationZ;
             targetScaleX = IsFacingRight ? uppercutRightScaleX : uppercutLeftScaleX;
-            currentControls = uppercutControls;
+            currentDisables = uppercutDisables;
+            // Override rotation for uppercut
             finalRotation = IsFacingRight ? 0 : 180;
         }
         else if (animationHandler.IsPunching)
@@ -217,57 +291,61 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
             targetOffset = IsFacingRight ? punchRightOffset : punchLeftOffset;
             targetRotationZ = IsFacingRight ? punchRightRotationZ : punchLeftRotationZ;
             targetScaleX = IsFacingRight ? punchRightScaleX : punchLeftScaleX;
-            currentControls = punchControls;
+            currentDisables = punchDisables;
+            // Override rotation for punch
+            finalRotation = IsFacingRight ? 0 : 180;
         }
         else if (animationHandler.IsShooting)
         {
             targetOffset = IsFacingRight ? shootRightOffset : shootLeftOffset;
             targetRotationZ = IsFacingRight ? shootRightRotationZ : shootLeftRotationZ;
             targetScaleX = IsFacingRight ? shootRightScaleX : shootLeftScaleX;
-            currentControls = shootControls;
+            currentDisables = shootDisables;
         }
         else // Idle state
         {
             targetOffset = IsFacingRight ? idleRightOffset : idleLeftOffset;
             targetRotationZ = IsFacingRight ? idleRightRotationZ : idleLeftRotationZ;
             targetScaleX = IsFacingRight ? idleRightScaleX : idleLeftScaleX;
-            currentControls = idleControls;
+            currentDisables = idleDisables;
         }
 
         // Apply position offset
         targetGameObject.localPosition = defaultLocalPosition + targetOffset;
         
-        // Apply combined rotation
+        // Apply combined rotation (using finalRotation instead of baseRotation for melee attacks)
         upperBody.rotation = Quaternion.Euler(0, 0, finalRotation + targetRotationZ);
         
         // Apply scale (maintaining Y and Z scale)
         Vector3 currentScale = targetGameObject.localScale;
         targetGameObject.localScale = new Vector3(targetScaleX * (IsFacingRight ? 1 : -1), currentScale.y, currentScale.z);
 
-        // Handle object controls
-        HandleObjectControls(currentControls);
+        // Handle disabling objects
+        HandleDisableControls(currentDisables);
     }
 
-    private void HandleObjectControls(AnimationObjectControl currentState)
+    private void HandleDisableControls(AnimationDisableControl currentState)
     {
-        if (currentState?.objectControls == null) return;
-
-        // First enable everything back to default state
+        // First, enable all sprite renderers
         EnableAllItems();
 
-        // Then apply the current state's controls
-        foreach (ObjectControl control in currentState.objectControls)
+        // Then disable the items for the current state
+        if (currentState != null && currentState.itemsToDisable != null)
         {
-            if (control.targetObject != null)
+            foreach (DisableItem item in currentState.itemsToDisable)
             {
-                if (control.disableType == DisableType.EntireGameObject)
+                if (item.spriteRenderer != null)
                 {
-                    control.targetObject.SetActive(control.shouldEnable);
-                }
-                else if (control.spriteRenderer != null)
-                {
-                    control.targetObject.SetActive(true);
-                    control.spriteRenderer.enabled = control.shouldEnable;
+                    if (item.disableType == DisableType.EntireGameObject)
+                    {
+                        // If we're disabling the entire GameObject, disable it
+                        item.spriteRenderer.gameObject.SetActive(false);
+                    }
+                    else
+                    {
+                        // If we're just disabling the SpriteRenderer, disable only that
+                        item.spriteRenderer.enabled = false;
+                    }
                 }
             }
         }
@@ -275,29 +353,31 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
 
     private void EnableAllItems()
     {
-        AnimationObjectControl[] allStates = new AnimationObjectControl[] 
+        // Create array of all possible states
+        AnimationDisableControl[] allStates = new AnimationDisableControl[] 
         {
-            idleControls,
-            shootControls,
-            punchControls,
-            uppercutControls,
-            heavyPunchControls,
-            chargingHeavyPunchControls
+            idleDisables,
+            shootDisables,
+            punchDisables,
+            uppercutDisables,
+            heavyPunchDisables,
+            chargingHeavyPunchDisables
         };
 
+        // Enable all items from all states
         foreach (var state in allStates)
         {
-            if (state?.objectControls != null)
+            if (state != null && state.itemsToDisable != null)
             {
-                foreach (ObjectControl control in state.objectControls)
+                foreach (DisableItem item in state.itemsToDisable)
                 {
-                    if (control.targetObject != null)
+                    if (item.spriteRenderer != null)
                     {
-                        control.targetObject.SetActive(true);
-                        if (control.spriteRenderer != null)
-                        {
-                            control.spriteRenderer.enabled = true;
-                        }
+                        // Always enable the GameObject
+                        item.spriteRenderer.gameObject.SetActive(true);
+                        
+                        // Enable the SpriteRenderer
+                        item.spriteRenderer.enabled = true;
                     }
                 }
             }
@@ -309,6 +389,10 @@ public class RotateUpperBodyTowardMouse : MonoBehaviour
         if (targetGameObject != null)
         {
             targetGameObject.localPosition = defaultLocalPosition;
+        }
+        if (secondaryAimObject != null)
+        {
+            secondaryAimObject.localPosition = secondaryDefaultLocalPosition;
         }
     }
 }
