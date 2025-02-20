@@ -1,0 +1,392 @@
+fileFormatVersion: 2
+guid: 6b6638609ed000040ae6e7be44516019
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 487158779032228880
+    second: BBBPlayer Jab 48x48-Sheet 1_0
+  - first:
+      213: -6175863195792371744
+    second: BBBPlayer Jab 48x48-Sheet 1_1
+  - first:
+      213: 1270824525964399067
+    second: BBBPlayer Jab 48x48-Sheet 1_2
+  - first:
+      213: -7839496331299683060
+    second: BBBPlayer Jab 48x48-Sheet 1_3
+  - first:
+      213: -319325258277790230
+    second: BBBPlayer Jab 48x48-Sheet 1_4
+  - first:
+      213: 3026285529164439800
+    second: BBBPlayer Jab 48x48-Sheet 1_5
+  - first:
+      213: 5116883435206529852
+    second: BBBPlayer Jab 48x48-Sheet 1_6
+  - first:
+      213: -7137414461479923861
+    second: BBBPlayer Jab 48x48-Sheet 1_7
+  - first:
+      213: -8559924049045791961
+    second: BBBPlayer Jab 48x48-Sheet 1_8
+  - first:
+      213: 2009813543289406395
+    second: BBBPlayer Jab 48x48-Sheet 1_9
+  - first:
+      213: -5625646217586250648
+    second: BBBPlayer Jab 48x48-Sheet 1_10
+  - first:
+      213: -9097979181767068499
+    second: BBBPlayer Jab 48x48-Sheet 1_11
+  - first:
+      213: 4333232716019333849
+    second: BBBPlayer Jab 48x48-Sheet 1_12
+  - first:
+      213: -3189623739277282644
+    second: BBBPlayer Jab 48x48-Sheet 1_13
+  - first:
+      213: 7751873065389208942
+    second: BBBPlayer Jab 48x48-Sheet 1_14
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 32
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: BBBPlayer Jab 48x48-Sheet 1_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 48
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 014dd65145cb2c600800000000000000
+      internalID: 487158779032228880
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BBBPlayer Jab 48x48-Sheet 1_1
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 0
+        width: 48
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0ef0361052dea4aa0800000000000000
+      internalID: -6175863195792371744
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BBBPlayer Jab 48x48-Sheet 1_2
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 0
+        width: 48
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bd156f95c20e2a110800000000000000
+      internalID: 1270824525964399067
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BBBPlayer Jab 48x48-Sheet 1_3
+      rect:
+        serializedVersion: 2
+        x: 144
+        y: 0
+        width: 48
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c0587e24f93843390800000000000000
+      internalID: -7839496331299683060
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BBBPlayer Jab 48x48-Sheet 1_4
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 0
+        width: 48
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aedda849e57819bf0800000000000000
+      internalID: -319325258277790230
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BBBPlayer Jab 48x48-Sheet 1_5
+      rect:
+        serializedVersion: 2
+        x: 240
+        y: 0
+        width: 48
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8f060c2a7a68ff920800000000000000
+      internalID: 3026285529164439800
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BBBPlayer Jab 48x48-Sheet 1_6
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 0
+        width: 48
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c33d098bf52d20740800000000000000
+      internalID: 5116883435206529852
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BBBPlayer Jab 48x48-Sheet 1_7
+      rect:
+        serializedVersion: 2
+        x: 336
+        y: 0
+        width: 48
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b6fc0c8ec5fc2fc90800000000000000
+      internalID: -7137414461479923861
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BBBPlayer Jab 48x48-Sheet 1_8
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 0
+        width: 48
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 72b5d480e6a053980800000000000000
+      internalID: -8559924049045791961
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: BBBPlayer Jab 48x48-Sheet 1_9
+      rect:
+        serializedVersion: 2
+        x: 432
+        y: 0
+        width: 48
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bb3c888e4ca44eb10800000000000000
+      internalID: 2009813543289406395
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 7c362520bf7d2d14aaa1076f306b7ff3
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      BBBPlayer Jab 48x48-Sheet 1_0: 487158779032228880
+      BBBPlayer Jab 48x48-Sheet 1_1: -6175863195792371744
+      BBBPlayer Jab 48x48-Sheet 1_2: 1270824525964399067
+      BBBPlayer Jab 48x48-Sheet 1_3: -7839496331299683060
+      BBBPlayer Jab 48x48-Sheet 1_4: -319325258277790230
+      BBBPlayer Jab 48x48-Sheet 1_5: 3026285529164439800
+      BBBPlayer Jab 48x48-Sheet 1_6: 5116883435206529852
+      BBBPlayer Jab 48x48-Sheet 1_7: -7137414461479923861
+      BBBPlayer Jab 48x48-Sheet 1_8: -8559924049045791961
+      BBBPlayer Jab 48x48-Sheet 1_9: 2009813543289406395
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
