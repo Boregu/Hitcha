@@ -226,19 +226,23 @@ public class bora : MonoBehaviour
 
         HandleWallJump(moveX);
 
-        if (Input.GetKey(KeyCode.Space) && canJump)
+        if (Input.GetKey(KeyCode.Space))
         {
-            if (preservedSpeed == 0)
+            // Prioritize regular jump over wall jump when on the ground
+            if (canJump)
             {
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+                if (preservedSpeed == 0)
+                {
+                    rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+                }
+                else
+                {
+                    rb.linearVelocity = new Vector2(preservedSpeed, jumpForce);
+                }
+                
+                canJump = false;
+                OnJump?.Invoke();
             }
-            else
-            {
-                rb.linearVelocity = new Vector2(preservedSpeed, jumpForce);
-            }
-            
-            canJump = false;
-            OnJump?.Invoke();
         }
     }
 
@@ -246,19 +250,18 @@ public class bora : MonoBehaviour
     {
         if (isWallSliding)
         {
-            // Disable the GameObject when wall sliding
-            if (objectToDisable != null)
-            {
-                objectToDisable.SetActive(false);
-            }
-
             bool holdingTowardsWall = (isWallRight && moveX > 0) || (isWallLeft && moveX < 0);
 
-            if (holdingTowardsWall)
+            // Only continue wall sliding if pressing towards the wall
+            if (!holdingTowardsWall)
             {
-                rb.linearVelocity = new Vector2(rb.linearVelocity.x, Mathf.Clamp(rb.linearVelocity.y, -wallSlideSpeed, float.MaxValue));
+                isWallSliding = false;
+                return;
             }
 
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, Mathf.Clamp(rb.linearVelocity.y, -wallSlideSpeed, float.MaxValue));
+
+            // Only allow wall jumping if pressing against the wall
             if (Input.GetKey(KeyCode.Space) && canWallJump)
             {
                 bool facingAwayFromWall = (isWallRight && facingDirection < 0) || (isWallLeft && facingDirection > 0);
@@ -284,13 +287,11 @@ public class bora : MonoBehaviour
                 OnWallJump?.Invoke();
             }
         }
-        else
+
+        // Handle object visibility based on wall sliding state
+        if (objectToDisable != null)
         {
-            // Enable the GameObject when not wall sliding
-            if (objectToDisable != null)
-            {
-                objectToDisable.SetActive(true);
-            }
+            objectToDisable.SetActive(!isWallSliding);
         }
     }
 
